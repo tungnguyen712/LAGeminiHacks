@@ -18,7 +18,7 @@ _GENERIC_NAV_PREFIXES: tuple[str, ...] = (
 # Score/confidence range where a "no evidence" guess lands
 _CLAMP_SCORE_LO  = 0.28
 _CLAMP_SCORE_HI  = 0.62
-_CLAMP_CONF_MAX  = 0.45
+_CLAMP_CONF_MAX  = 0.70
 _CLAMP_TARGET    = 0.12   # override value — clearly LOW
 
 

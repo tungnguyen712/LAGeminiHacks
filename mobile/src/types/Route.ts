@@ -8,6 +8,10 @@ export interface RouteSegment {
   confidence: number;
   type: string;
   details?: string;
+  startLat?: number;
+  startLng?: number;
+  endLat?: number;
+  endLng?: number;
 }
 
 export interface Route {

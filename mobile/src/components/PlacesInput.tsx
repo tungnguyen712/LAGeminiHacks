@@ -15,6 +15,12 @@ interface PlacesInputProps {
 
 const ICON_MAP = { Circle, MapPin, Search };
 
+// LA bounding box for autocomplete bias
+const LA_BOUNDS = {
+  north: 34.34, south: 33.70,
+  east: -117.65, west: -118.67,
+};
+
 export const PlacesInput = ({
   value,
   onPlaceSelect,
@@ -24,6 +30,7 @@ export const PlacesInput = ({
   th,
 }: PlacesInputProps) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const IconComponent = ICON_MAP[icon] || Search;
 
   const isDark = th?.isDark ?? true;
@@ -32,18 +39,59 @@ export const PlacesInput = ({
   const bgColor = th?.surface ?? 'rgba(255,255,255,0.03)';
   const placeholderColor = th?.textMuted ?? '#475569';
 
+  // Sync external value changes into the input (e.g. GPS fill)
   useEffect(() => {
     if (inputRef.current && inputRef.current !== document.activeElement) {
       inputRef.current.value = value || '';
     }
   }, [value]);
 
-  // Update placeholder color via CSS variable on the input element
+  // Placeholder color via CSS variable
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.setProperty('--ph-color', placeholderColor);
     }
   }, [placeholderColor]);
+
+  // Attach Google Places Autocomplete once Maps API is ready
+  useEffect(() => {
+    const attach = () => {
+      if (!inputRef.current || !window.google?.maps?.places) return;
+      if (autocompleteRef.current) return; // already attached
+
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(
+        inputRef.current,
+        {
+          types: ['geocode', 'establishment'],
+          bounds: new window.google.maps.LatLngBounds(
+            { lat: LA_BOUNDS.south, lng: LA_BOUNDS.west },
+            { lat: LA_BOUNDS.north, lng: LA_BOUNDS.east }
+          ),
+          strictBounds: false,
+        }
+      );
+
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current!.getPlace();
+        const address = place.formatted_address ?? place.name ?? '';
+        if (address) onPlaceSelect(address);
+      });
+    };
+
+    // Maps may already be loaded, or we wait for the callback
+    if (window.google?.maps?.places) {
+      attach();
+    } else {
+      // Poll briefly until Maps loads (it loads async via the script tag)
+      const interval = setInterval(() => {
+        if (window.google?.maps?.places) {
+          clearInterval(interval);
+          attach();
+        }
+      }, 200);
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   return (
     <div style={{ ...containerStyle, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}>
@@ -58,8 +106,6 @@ export const PlacesInput = ({
         className={isDark ? 'places-input-dark' : 'places-input-light'}
         autoComplete="off"
         spellCheck={false}
-        onBlur={(e) => { if (e.target.value.trim()) onPlaceSelect(e.target.value.trim()); }}
-        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
       />
       {onVoicePress && (
         <button onClick={onVoicePress} style={voiceButtonStyle} type="button">

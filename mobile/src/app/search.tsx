@@ -52,7 +52,7 @@ export const SearchScreen = () => {
     <View style={styles.container}>
       <View style={[styles.header, { borderBottomColor: th.border }]}>
         <Text style={[styles.title, { color: th.text }]}>Plan Route</Text>
-        {selectedProfile && <ProfileBadge profile={selectedProfile} size="sm" />}
+        {selectedProfile && <ProfileBadge profile={selectedProfile} size="md" />}
         <TouchableOpacity onPress={() => navigate('/settings')} style={[styles.iconButton, { backgroundColor: th.surface }]}>
           <Icons.Settings size={20} color={th.textSecondary} />
         </TouchableOpacity>
@@ -60,37 +60,32 @@ export const SearchScreen = () => {
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.searchSection}>
-          <View style={styles.searchGroup}>
-            <View style={[styles.line, { backgroundColor: th.border }]} />
-            <View style={styles.inputWrapper}>
-              <View style={styles.originRow}>
-                <View style={{ flex: 1 }}>
-                  <PlacesInput
-                    value={origin}
-                    onPlaceSelect={setOrigin}
-                    placeholder={t('currentLocation')}
-                    icon="Circle"
-                    onVoicePress={() => setIsVoiceVisible(true)}
-                    th={th}
-                  />
-                </View>
-                <TouchableOpacity onPress={handleGPS} style={styles.gpsButton} disabled={isLocating}>
-                  {isLocating
-                    ? <ActivityIndicator size="small" color="#3b82f6" />
-                    : <Icons.LocateFixed size={20} color="#3b82f6" />
-                  }
-                </TouchableOpacity>
-              </View>
+          <View style={styles.originRow}>
+            <View style={{ flex: 1 }}>
               <PlacesInput
-                value={destination}
-                onPlaceSelect={setDestination}
-                placeholder={t('destination')}
-                icon="MapPin"
+                value={origin}
+                onPlaceSelect={setOrigin}
+                placeholder={t('currentLocation')}
+                icon="Circle"
                 onVoicePress={() => setIsVoiceVisible(true)}
                 th={th}
               />
             </View>
+            <TouchableOpacity onPress={handleGPS} style={styles.gpsButton} disabled={isLocating}>
+              {isLocating
+                ? <ActivityIndicator size="small" color="#3b82f6" />
+                : <Icons.LocateFixed size={20} color="#3b82f6" />
+              }
+            </TouchableOpacity>
           </View>
+          <PlacesInput
+            value={destination}
+            onPlaceSelect={setDestination}
+            placeholder={t('destination')}
+            icon="MapPin"
+            onVoicePress={() => setIsVoiceVisible(true)}
+            th={th}
+          />
         </View>
 
         <View style={styles.recentSection}>
@@ -146,10 +141,7 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontSize: 20, fontWeight: '800' },
   content: { flex: 1 },
   scrollContent: { padding: 20, gap: 32 },
-  searchSection: { gap: 16 },
-  searchGroup: { flexDirection: 'row', gap: 16 },
-  line: { width: 2, marginVertical: 24, marginLeft: 22, borderRadius: 1 },
-  inputWrapper: { flex: 1, gap: 12 },
+  searchSection: { gap: 12 },
   originRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   gpsButton: {
     width: 44, height: 44, borderRadius: 22,

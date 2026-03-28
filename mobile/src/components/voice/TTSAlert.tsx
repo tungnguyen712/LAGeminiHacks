@@ -17,13 +17,13 @@ export const TTSAlert = ({ message, isVisible }: TTSAlertProps) => {
     if (isVisible) {
       Animated.spring(translateY, {
         toValue: 0,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start();
     } else {
       Animated.timing(translateY, {
         toValue: -100,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start();
     }
   }, [isVisible, translateY]);

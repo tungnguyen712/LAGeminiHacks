@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRoute } from '../store/RouteContext';
 import { useLanguage, THEME_MODES } from '../store/LanguageContext';
-import { TTSAlert } from '../components/voice/TTSAlert';
 import { FrictionBadge } from '../components/route/FrictionBadge';
 import { RouteMap } from '../components/map/RouteMap';
 import * as Icons from 'lucide-react';
@@ -13,33 +12,15 @@ export const NavigateScreen = () => {
   const { themeMode } = useLanguage();
   const th = THEME_MODES[themeMode];
   const [currentSegmentIndex, setCurrentSegmentIndex] = React.useState(0);
-  const [showTTS, setShowTTS] = React.useState(false);
-  const [ttsMessage, setTtsMessage] = React.useState('');
   const navigate = useNavigate();
 
-  const currentSegment = activeRoute?.segments[currentSegmentIndex];
-
-  React.useEffect(() => {
-    if (currentSegment) {
-      const message = `In ${currentSegment.distance}, ${currentSegment.instruction}. ${currentSegment.details || ''}`;
-      setTtsMessage(message);
-      setShowTTS(true);
-      const timer = setTimeout(() => setShowTTS(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentSegmentIndex, currentSegment]);
+  const segments = activeRoute?.segments ?? [];
+  const currentSegment = segments[currentSegmentIndex];
+  const isLast = currentSegmentIndex === segments.length - 1;
 
   React.useEffect(() => {
     if (!activeRoute) navigate('/results');
-  }, [activeRoute, navigate]);
-
-  const handleNext = () => {
-    if (activeRoute && currentSegmentIndex < activeRoute.segments.length - 1) {
-      setCurrentSegmentIndex(currentSegmentIndex + 1);
-    } else {
-      navigate('/results');
-    }
-  };
+  }, [activeRoute]);
 
   if (!activeRoute || !currentSegment) return null;
 
@@ -49,46 +30,80 @@ export const NavigateScreen = () => {
 
   return (
     <View style={styles.container}>
-      <TTSAlert isVisible={showTTS} message={ttsMessage} />
-
       <View style={styles.mapContainer}>
-        <RouteMap origin={origin || ''} destination={destination || ''} frictionColor={frictionColor} height={320} isDark={th.isDark} />
+        <RouteMap
+          origin={origin || ''}
+          destination={destination || ''}
+          frictionColor={frictionColor}
+          height={300}
+          isDark={th.isDark}
+          segments={segments}
+        />
         <View style={styles.mapOverlay}>
-          <TouchableOpacity onPress={() => navigate('/results')} style={[styles.closeButton, { backgroundColor: th.headerBg, borderColor: th.border }]}>
-            <Icons.X size={24} color={th.text} />
+          <TouchableOpacity
+            onPress={() => navigate('/results')}
+            style={[styles.closeButton, { backgroundColor: th.headerBg, borderColor: th.border }]}
+          >
+            <Icons.X size={22} color={th.text} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={[styles.instructionCard, { backgroundColor: th.headerBg, borderTopColor: th.border }]}>
+      <View style={[styles.card, { backgroundColor: th.headerBg, borderTopColor: th.border }]}>
         <View style={[styles.dragHandle, { backgroundColor: th.border }]} />
 
+        {/* Progress */}
+        <View style={styles.progress}>
+          <Text style={[styles.progressText, { color: th.textMuted }]}>
+            Step {currentSegmentIndex + 1} of {segments.length}
+          </Text>
+          <View style={[styles.progressBar, { backgroundColor: th.surface }]}>
+            <View style={[styles.progressFill, { width: `${((currentSegmentIndex + 1) / segments.length) * 100}%` as any, backgroundColor: frictionColor }]} />
+          </View>
+        </View>
+
+        {/* Direction */}
         <View style={styles.header}>
-          <View style={styles.directionIcon}>
-            <Icons.ArrowUpRight size={32} color="#ffffff" />
+          <View style={[styles.directionIcon, { backgroundColor: frictionColor }]}>
+            <Icons.ArrowUpRight size={28} color="#ffffff" />
           </View>
           <View style={styles.headerText}>
             <Text style={[styles.distance, { color: th.text }]}>{currentSegment.distance}</Text>
-            <Text style={[styles.instruction, { color: th.textSecondary }]}>{currentSegment.instruction}</Text>
+            <Text style={[styles.instruction, { color: th.textSecondary }]} numberOfLines={3}>
+              {currentSegment.instruction}
+            </Text>
           </View>
         </View>
 
-        <View style={[styles.frictionSection, { backgroundColor: th.surface, borderColor: th.border }]}>
+        {/* Friction */}
+        <View style={[styles.frictionRow, { backgroundColor: th.surface, borderColor: th.border }]}>
           <FrictionBadge level={currentSegment.friction} />
-          {currentSegment.details && (
-            <View style={styles.details}>
-              <Icons.AlertCircle size={16} color="#ef4444" />
-              <Text style={styles.detailsText}>{currentSegment.details}</Text>
-            </View>
-          )}
+          {currentSegment.details ? (
+            <Text style={[styles.detailsText, { color: th.textSecondary }]} numberOfLines={2}>
+              {currentSegment.details}
+            </Text>
+          ) : null}
         </View>
 
+        {/* Actions */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextButtonText}>
-              {currentSegmentIndex === activeRoute.segments.length - 1 ? 'Finish' : 'Next Step'}
-            </Text>
-            <Icons.ChevronRight size={20} color="#ffffff" />
+          {currentSegmentIndex > 0 && (
+            <TouchableOpacity
+              style={[styles.prevButton, { backgroundColor: th.surface, borderColor: th.border }]}
+              onPress={() => setCurrentSegmentIndex(i => i - 1)}
+            >
+              <Icons.ChevronLeft size={20} color={th.text} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.nextButton, { backgroundColor: frictionColor }]}
+            onPress={() => {
+              if (isLast) navigate('/results');
+              else setCurrentSegmentIndex(i => i + 1);
+            }}
+          >
+            <Text style={styles.nextButtonText}>{isLast ? 'Finish' : 'Next Step'}</Text>
+            {isLast ? <Icons.CheckCircle size={20} color="#ffffff" /> : <Icons.ChevronRight size={20} color="#ffffff" />}
           </TouchableOpacity>
         </View>
       </View>
@@ -100,31 +115,42 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   mapContainer: { position: 'relative' } as any,
   mapOverlay: { position: 'absolute', top: 16, right: 16 } as any,
-  closeButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  instructionCard: {
-    flex: 1, borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    padding: 24, paddingBottom: 40, gap: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 20,
-    borderTopWidth: 1,
+  closeButton: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
   },
-  dragHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 8 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  card: {
+    flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 36,
+    gap: 16, borderTopWidth: 1,
+    shadowColor: '#000', shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 16,
+  },
+  dragHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center' },
+  progress: { gap: 6 },
+  progressText: { fontSize: 12, fontWeight: '600' },
+  progressBar: { height: 4, borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 2 } as any,
+  header: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
   directionIcon: {
-    width: 64, height: 64, borderRadius: 20, backgroundColor: '#3b82f6',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12,
+    width: 56, height: 56, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  headerText: { flex: 1, gap: 4 },
-  distance: { fontSize: 24, fontWeight: '800' },
-  instruction: { fontSize: 18, fontWeight: '600' },
-  frictionSection: { padding: 16, borderRadius: 16, gap: 12, borderWidth: 1 },
-  details: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  detailsText: { fontSize: 14, color: '#ef4444', fontWeight: '600' },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  headerText: { flex: 1, gap: 4, paddingTop: 2 },
+  distance: { fontSize: 22, fontWeight: '800' },
+  instruction: { fontSize: 15, fontWeight: '500', lineHeight: 22 },
+  frictionRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    padding: 12, borderRadius: 14, borderWidth: 1,
+  },
+  detailsText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  footer: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  prevButton: {
+    width: 48, height: 52, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
+  },
   nextButton: {
-    flex: 1, backgroundColor: '#3b82f6', height: 56, paddingHorizontal: 24,
-    borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
-    shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12,
+    flex: 1, height: 52, borderRadius: 14,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
   },
   nextButtonText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
 });

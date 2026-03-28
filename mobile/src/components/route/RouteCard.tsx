@@ -1,22 +1,22 @@
-import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Route } from '../../types/Route';
 import { FrictionBadge } from './FrictionBadge';
-import { ConfidenceMeter } from './ConfidenceMeter';
 import * as Icons from 'lucide-react';
 
 interface RouteCardProps {
   route: Route;
   isSelected: boolean;
   onSelect: () => void;
+  onViewSegments?: () => void;
   key?: any;
 }
 
-export const RouteCard = ({ route, isSelected, onSelect }: RouteCardProps) => {
+export const RouteCard = ({ route, isSelected, onSelect, onViewSegments }: RouteCardProps) => {
   return (
     <TouchableOpacity
       onPress={onSelect}
       style={[styles.container, isSelected && styles.selected]}
+      activeOpacity={0.85}
     >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
@@ -29,13 +29,19 @@ export const RouteCard = ({ route, isSelected, onSelect }: RouteCardProps) => {
         </View>
         <FrictionBadge level={route.overallFriction} />
       </View>
-      
-      <View style={styles.footer}>
-        <ConfidenceMeter confidence={route.confidence} />
-        <View style={styles.action}>
+
+      <View style={[styles.footer, isSelected && styles.footerSelected]}>
+        <TouchableOpacity
+          style={styles.action}
+          onPress={(e) => {
+            e.stopPropagation?.();
+            onViewSegments?.();
+          }}
+          activeOpacity={0.7}
+        >
           <Text style={styles.actionText}>View Segments</Text>
           <Icons.ChevronRight size={16} color="#3b82f6" />
-        </View>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -45,33 +51,36 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#e2e8f0',
     marginBottom: 12,
-    gap: 16,
+    gap: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 2,
   },
   selected: {
     borderColor: '#3b82f6',
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    backgroundColor: '#eff6ff',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: 12,
   },
   titleContainer: {
     gap: 4,
+    flex: 1,
+    marginRight: 12,
   },
   name: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#0f172a',
   },
   meta: {
     flexDirection: 'row',
@@ -85,29 +94,32 @@ const styles = StyleSheet.create({
   },
   distance: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: '#64748b',
   },
   dot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#cbd5e1',
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: '#f1f5f9',
+    alignItems: 'flex-end',
+  },
+  footerSelected: {
+    borderTopColor: '#dbeafe',
   },
   action: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
   },
   actionText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#3b82f6',
   },
