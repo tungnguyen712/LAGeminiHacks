@@ -1,10 +1,32 @@
-import { View, Text } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 interface Props {
-  confidence: number; // 0.0–1.0
+  confidence: number;
 }
 
-// TODO: implement progress bar confidence meter
 export function ConfidenceMeter({ confidence }: Props) {
-  return <View><Text>{Math.round(confidence * 100)}%</Text></View>;
+  const pct = Math.round(Math.max(0, Math.min(1, confidence)) * 100);
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.label}>Confidence {pct}%</Text>
+      <View style={styles.track}>
+        <View style={[styles.fill, { width: `${pct}%` }]} />
+      </View>
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  wrap: { marginTop: 6 },
+  label: { color: '#8E8E93', fontSize: 11, marginBottom: 4 },
+  track: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#3A3A3C',
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    backgroundColor: '#8AB4F8',
+  },
+});

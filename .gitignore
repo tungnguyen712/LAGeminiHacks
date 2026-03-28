@@ -4,6 +4,7 @@
 
 # Node
 node_modules/
+.vite/
 .expo/
 dist/
 web-build/

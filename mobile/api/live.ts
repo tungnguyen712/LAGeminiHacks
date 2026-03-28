@@ -7,13 +7,11 @@ const BASE_URL =
 
 const WS_URL = BASE_URL.replace(/^http/, 'ws');
 
-export function openLiveSession(routeContext: string, languageCode: string): WebSocket {
-  const ws = new WebSocket(
-    `${WS_URL}/api/live?languageCode=${languageCode}`
-  );
-  // Send route context once connection opens
-  ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'context', routeContext }));
-  };
-  return ws;
+export function buildLiveWebSocketUrl(languageCode: string): string {
+  return `${WS_URL}/api/live?languageCode=${encodeURIComponent(languageCode)}`;
+}
+
+/** Opens a WebSocket; caller should send `{ type: 'context', routeContext }` on `onopen`. */
+export function openLiveSession(_routeContext: string, languageCode: string): WebSocket {
+  return new WebSocket(buildLiveWebSocketUrl(languageCode));
 }
