@@ -106,18 +106,23 @@ export const RouteMap = ({
 
           const leg = result.routes[0]?.legs[0];
           if (leg && mapRef.current) {
+            // Only show start marker when NOT in navigation mode (user dot IS the start)
+            if (!centerOnUser) {
+              markerRefs.current.push(
+                new window.google.maps.Marker({
+                  position: leg.start_location,
+                  map: mapRef.current,
+                  icon: {
+                    path: (window.google.maps.SymbolPath as any).CIRCLE,
+                    fillColor: '#10b981', fillOpacity: 1,
+                    strokeColor: '#ffffff', strokeWeight: 2,
+                    scale: 9,
+                  },
+                  title: 'Start',
+                })
+              );
+            }
             markerRefs.current.push(
-              new window.google.maps.Marker({
-                position: leg.start_location,
-                map: mapRef.current,
-                icon: {
-                  path: (window.google.maps.SymbolPath as any).CIRCLE,
-                  fillColor: '#10b981', fillOpacity: 1,
-                  strokeColor: '#ffffff', strokeWeight: 2,
-                  scale: 9,
-                },
-                title: 'Start',
-              }),
               new window.google.maps.Marker({
                 position: leg.end_location,
                 map: mapRef.current,

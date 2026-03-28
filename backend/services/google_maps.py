@@ -64,14 +64,31 @@ _WAYPOINT_OFFSETS = [
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+def _location_field(value: str) -> dict:
+    """Return a Routes API location object.
+
+    If *value* looks like 'lat,lng' (e.g. '34.0522,-118.2437') use the
+    latLng form so the API accepts raw coordinates from the GPS button.
+    Otherwise fall back to the address form.
+    """
+    parts = value.split(",")
+    if len(parts) == 2:
+        try:
+            lat, lng = float(parts[0].strip()), float(parts[1].strip())
+            return {"location": {"latLng": {"latitude": lat, "longitude": lng}}}
+        except ValueError:
+            pass
+    return {"address": value}
+
+
 def _build_payload(
     origin: str,
     destination: str,
     intermediate_latlng: tuple[float, float] | None = None,
 ) -> dict:
     payload: dict = {
-        "origin": {"address": origin},
-        "destination": {"address": destination},
+        "origin": _location_field(origin),
+        "destination": _location_field(destination),
         "travelMode": "WALK",
         "units": "METRIC",
     }
@@ -217,8 +234,8 @@ def parse_routes(raw_routes: list[dict]) -> list[dict]:
 
 def _build_transit_payload(origin: str, destination: str) -> dict:
     return {
-        "origin": {"address": origin},
-        "destination": {"address": destination},
+        "origin": _location_field(origin),
+        "destination": _location_field(destination),
         "travelMode": "TRANSIT",
         "units": "METRIC",
         "computeAlternativeRoutes": True,
