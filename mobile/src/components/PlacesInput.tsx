@@ -1,5 +1,8 @@
 import { useRef, useEffect } from 'react';
 import { Mic, MapPin, Circle, Search } from 'lucide-react';
+import { THEME_MODES } from '../store/LanguageContext';
+
+type ThemeColors = typeof THEME_MODES['day'];
 
 interface PlacesInputProps {
   value: string;
@@ -7,6 +10,7 @@ interface PlacesInputProps {
   placeholder: string;
   icon?: 'Circle' | 'MapPin' | 'Search';
   onVoicePress?: () => void;
+  th?: ThemeColors;
 }
 
 const ICON_MAP = { Circle, MapPin, Search };
@@ -17,32 +21,45 @@ export const PlacesInput = ({
   placeholder,
   icon = 'Search',
   onVoicePress,
+  th,
 }: PlacesInputProps) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const IconComponent = ICON_MAP[icon] || Search;
 
-  // Sync value from parent (e.g. GPS fill) without disrupting typing
+  const isDark = th?.isDark ?? true;
+  const textColor = th?.text ?? '#ffffff';
+  const borderColor = th?.border ?? 'rgba(255,255,255,0.05)';
+  const bgColor = th?.surface ?? 'rgba(255,255,255,0.03)';
+  const placeholderColor = th?.textMuted ?? '#475569';
+
   useEffect(() => {
     if (inputRef.current && inputRef.current !== document.activeElement) {
       inputRef.current.value = value || '';
     }
   }, [value]);
 
+  // Update placeholder color via CSS variable on the input element
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.setProperty('--ph-color', placeholderColor);
+    }
+  }, [placeholderColor]);
+
   return (
-    <div style={containerStyle}>
+    <div style={{ ...containerStyle, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}>
       <div style={iconContainerStyle}>
-        <IconComponent size={20} color="#94a3b8" />
+        <IconComponent size={20} color={th?.textMuted ?? '#94a3b8'} />
       </div>
       <input
         ref={inputRef}
         defaultValue={value}
         placeholder={placeholder}
-        style={inputStyle}
-        className="places-input"
+        style={{ ...inputStyle, color: textColor }}
+        className={isDark ? 'places-input-dark' : 'places-input-light'}
         autoComplete="off"
         spellCheck={false}
         onBlur={(e) => { if (e.target.value.trim()) onPlaceSelect(e.target.value.trim()); }}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
       />
       {onVoicePress && (
         <button onClick={onVoicePress} style={voiceButtonStyle} type="button">
@@ -57,9 +74,7 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'center',
-  backgroundColor: 'rgba(255, 255, 255, 0.03)',
   borderRadius: 16,
-  border: '1px solid rgba(255, 255, 255, 0.05)',
   paddingLeft: 16,
   paddingRight: 8,
   height: 56,
@@ -79,7 +94,6 @@ const iconContainerStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   flex: 1,
   fontSize: 16,
-  color: '#ffffff',
   fontWeight: '500',
   background: 'transparent',
   border: 'none',

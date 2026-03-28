@@ -15,9 +15,10 @@ html, body, #root {
 [data-focusable] { outline: none; }
 div[style*="overflow"] { -webkit-overflow-scrolling: touch; }
 
-/* PlacesInput native HTML input styles */
-.places-input::placeholder { color: #475569; }
-.places-input:focus { outline: none; }
+/* PlacesInput placeholder colors per theme */
+.places-input-dark::placeholder { color: #475569; }
+.places-input-light::placeholder { color: #94a3b8; }
+.places-input-dark:focus, .places-input-light:focus { outline: none; }
 
 
 @theme {

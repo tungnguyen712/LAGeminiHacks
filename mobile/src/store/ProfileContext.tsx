@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { AccessibilityProfile } from '../types/Profile';
+
+const STORAGE_KEY = 'pathsense_profile';
 
 interface ProfileContextType {
   selectedProfile: AccessibilityProfile | null;
@@ -9,7 +11,23 @@ interface ProfileContextType {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
-  const [selectedProfile, setSelectedProfile] = useState<AccessibilityProfile | null>(null);
+  const [selectedProfile, setSelectedProfileState] = useState<AccessibilityProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setSelectedProfile = (profile: AccessibilityProfile | null) => {
+    setSelectedProfileState(profile);
+    if (profile) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
 
   return (
     <ProfileContext.Provider value={{ selectedProfile, setSelectedProfile }}>

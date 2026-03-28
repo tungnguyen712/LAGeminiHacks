@@ -5,5 +5,7 @@ export interface AccessibilityProfile {
   name: string;
   description: string;
   icon: string;
+  emoji: string;
+  bgColor: string;
   color: string;
 }

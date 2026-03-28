@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, ActivityIndicator } from 'react-native';
 import { useRoute } from '../store/RouteContext';
 import { useProfile } from '../store/ProfileContext';
-import { useLanguage } from '../store/LanguageContext';
+import { useLanguage, THEME_MODES } from '../store/LanguageContext';
 import { PlacesInput } from '../components/PlacesInput';
 import { ProfileBadge } from '../components/profile/ProfileBadge';
 import { VoiceSheet } from '../components/voice/VoiceSheet';
@@ -12,7 +12,8 @@ import { useNavigate } from 'react-router-dom';
 export const SearchScreen = () => {
   const { origin, setOrigin, destination, setDestination } = useRoute();
   const { selectedProfile } = useProfile();
-  const { t } = useLanguage();
+  const { t, themeMode } = useLanguage();
+  const th = THEME_MODES[themeMode];
   const [isVoiceVisible, setIsVoiceVisible] = React.useState(false);
   const [isLocating, setIsLocating] = React.useState(false);
   const navigate = useNavigate();
@@ -33,9 +34,7 @@ export const SearchScreen = () => {
           setIsLocating(false);
         });
       },
-      () => {
-        setIsLocating(false);
-      },
+      () => { setIsLocating(false); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
@@ -46,25 +45,23 @@ export const SearchScreen = () => {
   };
 
   const handleSearch = () => {
-    if (origin && destination) {
-      navigate('/results');
-    }
+    if (origin && destination) navigate('/results');
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigate('/')} style={styles.backButton}>
-          <Icons.ArrowLeft size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Plan Route</Text>
+      <View style={[styles.header, { borderBottomColor: th.border }]}>
+        <Text style={[styles.title, { color: th.text }]}>Plan Route</Text>
         {selectedProfile && <ProfileBadge profile={selectedProfile} size="sm" />}
+        <TouchableOpacity onPress={() => navigate('/settings')} style={[styles.iconButton, { backgroundColor: th.surface }]}>
+          <Icons.Settings size={20} color={th.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.searchSection}>
           <View style={styles.searchGroup}>
-            <View style={styles.line} />
+            <View style={[styles.line, { backgroundColor: th.border }]} />
             <View style={styles.inputWrapper}>
               <View style={styles.originRow}>
                 <View style={{ flex: 1 }}>
@@ -74,6 +71,7 @@ export const SearchScreen = () => {
                     placeholder={t('currentLocation')}
                     icon="Circle"
                     onVoicePress={() => setIsVoiceVisible(true)}
+                    th={th}
                   />
                 </View>
                 <TouchableOpacity onPress={handleGPS} style={styles.gpsButton} disabled={isLocating}>
@@ -89,43 +87,40 @@ export const SearchScreen = () => {
                 placeholder={t('destination')}
                 icon="MapPin"
                 onVoicePress={() => setIsVoiceVisible(true)}
+                th={th}
               />
             </View>
           </View>
         </View>
 
         <View style={styles.recentSection}>
-          <Text style={styles.sectionTitle}>Recent Places</Text>
-          <TouchableOpacity style={styles.recentItem} onPress={() => handleRecentSelect('Central Library, Los Angeles, CA')}>
-            <Icons.Clock size={18} color="#94a3b8" />
-            <View style={styles.recentText}>
-              <Text style={styles.recentTitle}>Central Library</Text>
-              <Text style={styles.recentSubtitle}>630 W 5th St, Downtown LA</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.recentItem} onPress={() => handleRecentSelect('Griffith Park, Los Angeles, CA')}>
-            <Icons.Clock size={18} color="#94a3b8" />
-            <View style={styles.recentText}>
-              <Text style={styles.recentTitle}>Griffith Park</Text>
-              <Text style={styles.recentSubtitle}>West Entrance, Accessible Path</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.recentItem} onPress={() => handleRecentSelect('Union Station, Los Angeles, CA')}>
-            <Icons.Clock size={18} color="#94a3b8" />
-            <View style={styles.recentText}>
-              <Text style={styles.recentTitle}>Union Station</Text>
-              <Text style={styles.recentSubtitle}>800 N Alameda St, Los Angeles</Text>
-            </View>
-          </TouchableOpacity>
+          <Text style={[styles.sectionTitle, { color: th.textMuted }]}>Recent Places</Text>
+          {[
+            { name: 'Central Library', sub: '630 W 5th St, Downtown LA', place: 'Central Library, Los Angeles, CA' },
+            { name: 'Griffith Park', sub: 'West Entrance, Accessible Path', place: 'Griffith Park, Los Angeles, CA' },
+            { name: 'Union Station', sub: '800 N Alameda St, Los Angeles', place: 'Union Station, Los Angeles, CA' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.name}
+              style={[styles.recentItem, { borderBottomColor: th.border }]}
+              onPress={() => handleRecentSelect(item.place)}
+            >
+              <Icons.Clock size={18} color={th.textMuted} />
+              <View style={styles.recentText}>
+                <Text style={[styles.recentTitle, { color: th.text }]}>{item.name}</Text>
+                <Text style={[styles.recentSubtitle, { color: th.textSecondary }]}>{item.sub}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: th.border }]}>
         <Pressable
           style={({ pressed }) => [
             styles.button,
-            (!origin || !destination) && styles.buttonDisabled,
-            pressed && !(!origin || !destination) && { opacity: 0.8, transform: [{ scale: 0.98 }] }
+            (!origin || !destination) && { backgroundColor: th.surface },
+            pressed && !(!origin || !destination) && { opacity: 0.8, transform: [{ scale: 0.98 }] },
           ]}
           onPress={handleSearch}
           disabled={!origin || !destination}
@@ -135,141 +130,43 @@ export const SearchScreen = () => {
         </Pressable>
       </View>
 
-      <VoiceSheet
-        isVisible={isVoiceVisible}
-        onClose={() => setIsVoiceVisible(false)}
-        transcript=""
-        isListening={false}
-      />
+      <VoiceSheet isVisible={isVoiceVisible} onClose={() => setIsVoiceVisible(false)} transcript="" isListening={false} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 40,
-    gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 40,
+    gap: 16, borderBottomWidth: 1,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    gap: 32,
-  },
-  searchSection: {
-    gap: 16,
-  },
-  searchGroup: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  line: {
-    width: 2,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginVertical: 24,
-    marginLeft: 22,
-    borderRadius: 1,
-  },
-  inputWrapper: {
-    flex: 1,
-    gap: 12,
-  },
-  originRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  iconButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, fontSize: 20, fontWeight: '800' },
+  content: { flex: 1 },
+  scrollContent: { padding: 20, gap: 32 },
+  searchSection: { gap: 16 },
+  searchGroup: { flexDirection: 'row', gap: 16 },
+  line: { width: 2, marginVertical: 24, marginLeft: 22, borderRadius: 1 },
+  inputWrapper: { flex: 1, gap: 12 },
+  originRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   gpsButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(59,130,246,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.2)',
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(59,130,246,0.1)', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)',
   },
-  recentSection: {
-    gap: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  recentText: {
-    flex: 1,
-    gap: 2,
-  },
-  recentTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#f1f5f9',
-  },
-  recentSubtitle: {
-    fontSize: 13,
-    color: '#94a3b8',
-  },
-  footer: {
-    padding: 20,
-    paddingBottom: 40,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
-  },
+  recentSection: { gap: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  recentItem: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  recentText: { flex: 1, gap: 2 },
+  recentTitle: { fontSize: 16, fontWeight: '600' },
+  recentSubtitle: { fontSize: 13 },
+  footer: { padding: 20, paddingBottom: 40, borderTopWidth: 1 },
   button: {
-    backgroundColor: '#3b82f6',
-    height: 56,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: '#3b82f6', height: 56, borderRadius: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+    shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 4,
   },
-  buttonDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
+  buttonText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
 });

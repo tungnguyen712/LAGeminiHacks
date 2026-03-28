@@ -19,31 +19,32 @@ interface RouteMapProps {
   destination: string;
   frictionColor?: string;
   height?: number;
+  isDark?: boolean;
 }
 
-export const RouteMap = ({ origin, destination, frictionColor, height = 260 }: RouteMapProps) => {
+export const RouteMap = ({ origin, destination, frictionColor, height = 260, isDark = true }: RouteMapProps) => {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const rendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Init map + fetch directions together so there's no race condition
   useEffect(() => {
     if (!mapDivRef.current) return;
     if (!window.google?.maps) return;
 
-    // Init map if not yet done
     if (!mapRef.current) {
       mapRef.current = new window.google.maps.Map(mapDivRef.current, {
         center: { lat: 34.0522, lng: -118.2437 },
         zoom: 14,
-        styles: DARK_MAP_STYLES,
+        styles: isDark ? DARK_MAP_STYLES : [],
         disableDefaultUI: true,
         zoomControl: true,
         gestureHandling: 'greedy',
       });
       rendererRef.current = new window.google.maps.DirectionsRenderer();
       rendererRef.current.setMap(mapRef.current);
+    } else {
+      mapRef.current.setOptions({ styles: isDark ? DARK_MAP_STYLES : [] });
     }
 
     if (!origin || !destination) return;
@@ -64,7 +65,7 @@ export const RouteMap = ({ origin, destination, frictionColor, height = 260 }: R
         }
       }
     );
-  }, [origin, destination, frictionColor]);
+  }, [origin, destination, frictionColor, isDark]);
 
   return (
     <View style={[styles.container, { height }]}>
@@ -79,22 +80,11 @@ export const RouteMap = ({ origin, destination, frictionColor, height = 260 }: R
 };
 
 const styles = StyleSheet.create({
-  container: {
-    overflow: 'hidden',
-    position: 'relative',
-  } as any,
+  container: { overflow: 'hidden', position: 'relative' } as any,
   errorOverlay: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
+    position: 'absolute', bottom: 8, left: 8,
     backgroundColor: 'rgba(239,68,68,0.85)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
   } as any,
-  errorText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  errorText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
 });

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable } from 'react-native';
 import { useRoute } from '../store/RouteContext';
 import { useProfile } from '../store/ProfileContext';
-import { useLanguage } from '../store/LanguageContext';
+import { useLanguage, THEME_MODES } from '../store/LanguageContext';
 import { RouteMap } from '../components/map/RouteMap';
 import { RouteCard } from '../components/route/RouteCard';
 import { ProfileBadge } from '../components/profile/ProfileBadge';
@@ -41,42 +41,28 @@ const MOCK_ROUTES: Route[] = [
 export const ResultsScreen = () => {
   const { activeRoute, setActiveRoute, origin, destination } = useRoute();
   const { selectedProfile } = useProfile();
-  useLanguage();
+  const { themeMode } = useLanguage();
+  const th = THEME_MODES[themeMode];
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!activeRoute && MOCK_ROUTES.length > 0) {
-      setActiveRoute(MOCK_ROUTES[0]);
-    }
+    if (!activeRoute && MOCK_ROUTES.length > 0) setActiveRoute(MOCK_ROUTES[0]);
   }, []);
 
-  const handleRouteSelect = (route: Route) => {
-    console.log('Selected route:', route.id);
-    setActiveRoute(route);
-  };
+  const handleRouteSelect = (route: Route) => setActiveRoute(route);
 
-  const handleNavigate = () => {
-    console.log('Starting navigation with route:', activeRoute?.id);
-    if (activeRoute) {
-      navigate('/navigate');
-    }
-  };
-
-  const handleSegmentDrillDown = () => {
-    console.log('Viewing segment details for route:', activeRoute?.id);
-    if (activeRoute) {
-      navigate('/segment');
-    }
-  };
+  const frictionColor =
+    activeRoute?.overallFriction === 'low' ? '#10b981' :
+    activeRoute?.overallFriction === 'medium' ? '#f59e0b' : '#ef4444';
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigate('/search')} style={styles.backButton}>
-          <Icons.ArrowLeft size={24} color="#ffffff" />
+      <View style={[styles.header, { backgroundColor: th.headerBg, borderBottomColor: th.border }]}>
+        <TouchableOpacity onPress={() => navigate('/search')} style={[styles.backButton, { backgroundColor: th.surface }]}>
+          <Icons.ArrowLeft size={24} color={th.text} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={styles.routeText} numberOfLines={1}>{origin} to {destination}</Text>
+          <Text style={[styles.routeText, { color: th.text }]} numberOfLines={1}>{origin} to {destination}</Text>
           {selectedProfile && <ProfileBadge profile={selectedProfile} size="sm" />}
         </View>
       </View>
@@ -84,11 +70,12 @@ export const ResultsScreen = () => {
       <RouteMap
         origin={origin || ''}
         destination={destination || ''}
-        frictionColor={activeRoute ? (activeRoute.overallFriction === 'low' ? '#10b981' : activeRoute.overallFriction === 'medium' ? '#f59e0b' : '#ef4444') : undefined}
+        frictionColor={frictionColor}
+        isDark={th.isDark}
       />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.sectionTitle}>Recommended Routes</Text>
+        <Text style={[styles.sectionTitle, { color: th.textMuted }]}>Recommended Routes</Text>
         {MOCK_ROUTES.map((route) => (
           <RouteCard
             key={route.id}
@@ -100,22 +87,16 @@ export const ResultsScreen = () => {
       </ScrollView>
 
       {activeRoute && (
-        <View style={styles.footer}>
-          <Pressable 
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
-            ]} 
-            onPress={handleSegmentDrillDown}
+        <View style={[styles.footer, { backgroundColor: th.headerBg, borderTopColor: th.border }]}>
+          <Pressable
+            style={({ pressed }) => [styles.secondaryButton, { backgroundColor: th.surface, borderColor: th.border }, pressed && { opacity: 0.8 }]}
+            onPress={() => navigate('/segment')}
           >
-            <Text style={styles.secondaryButtonText}>Details</Text>
+            <Text style={[styles.secondaryButtonText, { color: th.text }]}>Details</Text>
           </Pressable>
-          <Pressable 
-            style={({ pressed }) => [
-              styles.primaryButton,
-              pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
-            ]} 
-            onPress={handleNavigate}
+          <Pressable
+            style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
+            onPress={() => navigate('/navigate')}
           >
             <Text style={styles.primaryButtonText}>Start Navigation</Text>
             <Icons.Navigation2 size={20} color="#ffffff" />
@@ -127,104 +108,32 @@ export const ResultsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 40,
-    gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    zIndex: 10,
+    flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 40,
+    gap: 16, borderBottomWidth: 1, zIndex: 10,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    flex: 1,
-    gap: 2,
-  },
-  routeText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 120,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 16,
-  },
+  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  headerText: { flex: 1, gap: 2 },
+  routeText: { fontSize: 16, fontWeight: '700' },
+  content: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 120 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 },
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    padding: 20,
-    paddingBottom: 40,
-    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    flexDirection: 'row', padding: 20, paddingBottom: 40,
+    borderTopWidth: 1, gap: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 10,
   },
   primaryButton: {
-    flex: 2,
-    backgroundColor: '#3b82f6',
-    height: 56,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 4,
+    flex: 2, backgroundColor: '#3b82f6', height: 56, borderRadius: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+    shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 4,
   },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
+  primaryButtonText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
   secondaryButton: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    flex: 1, height: 56, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
   },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#f1f5f9',
-  },
+  secondaryButtonText: { fontSize: 16, fontWeight: '700' },
 });
