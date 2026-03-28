@@ -245,17 +245,6 @@ export const NavigateScreen = () => {
           </View>
         )}
 
-        {/* Reroute button */}
-        <TouchableOpacity
-          style={[styles.rerouteBtn, { borderColor: '#ef4444' }, isRerouting && { opacity: 0.6 }]}
-          onPress={handleReroute}
-          disabled={isRerouting}
-        >
-          {isRerouting
-            ? <><ActivityIndicator size="small" color="#ef4444" /><Text style={styles.rerouteBtnText}>Finding detour…</Text></>
-            : <><Icons.TriangleAlert size={16} color="#ef4444" /><Text style={styles.rerouteBtnText}>Path Blocked — Reroute</Text></>
-          }
-        </TouchableOpacity>
         {rerouteError && (
           <Text style={styles.rerouteError}>{rerouteError}</Text>
         )}
@@ -278,6 +267,16 @@ export const NavigateScreen = () => {
               <Icons.ChevronLeft size={20} color={th.text} />
             </TouchableOpacity>
           )}
+          {/* Path blocked reroute — compact icon button */}
+          <TouchableOpacity
+            style={[styles.rerouteBtn, { borderColor: isRerouting ? th.border : '#ef4444' }, isRerouting && { opacity: 0.6 }]}
+            onPress={handleReroute}
+            disabled={isRerouting}
+          >
+            {isRerouting
+              ? <ActivityIndicator size="small" color="#ef4444" />
+              : <Icons.TriangleAlert size={18} color="#ef4444" />}
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.nextBtn, { backgroundColor: frictionColor }]}
             onPress={() => {
@@ -351,10 +350,9 @@ const styles = StyleSheet.create({
   },
   nextBtnText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
   rerouteBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    height: 46, borderRadius: 14, borderWidth: 1.5,
+    width: 46, height: 50, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
     backgroundColor: 'rgba(239,68,68,0.08)', cursor: 'pointer' as any,
   },
-  rerouteBtnText: { fontSize: 14, fontWeight: '700', color: '#ef4444' },
-  rerouteError: { fontSize: 12, color: '#ef4444', textAlign: 'center', marginTop: -6 },
+  rerouteError: { fontSize: 12, color: '#ef4444', textAlign: 'center' },
 });
