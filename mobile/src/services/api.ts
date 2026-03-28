@@ -6,7 +6,7 @@ import axios from 'axios';
 import { Route, RouteSegment, FrictionLevel } from '../types/Route';
 
 
-const BASE = (process.env.BACKEND_URL as string) || 'http://localhost:8000';
+const BASE = (import.meta.env.VITE_BACKEND_URL as string) || 'http://localhost:8000';
 
 // ── Backend response types ────────────────────────────────────────────────────
 
@@ -139,6 +139,21 @@ export async function fetchRoutes(
   }));
 
   return enriched.map(toAppRoute);
+}
+
+/**
+ * Fetch TTS audio for a text string. Returns base64-encoded WAV, or null on error.
+ */
+export async function fetchTTS(text: string, languageTag = 'en-US'): Promise<string | null> {
+  try {
+    const res = await axios.post<{ audioBase64: string }>(`${BASE}/api/tts`, {
+      text,
+      languageTag,
+    });
+    return res.data.audioBase64 ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**

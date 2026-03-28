@@ -4,6 +4,8 @@ import { useRoute } from '../store/RouteContext';
 import { useLanguage, THEME_MODES } from '../store/LanguageContext';
 import { FrictionBadge } from '../components/route/FrictionBadge';
 import { RouteMap } from '../components/map/RouteMap';
+import { TTSAlert } from '../components/voice/TTSAlert';
+import { fetchTTS } from '../services/api';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,6 +26,11 @@ export const NavigateScreen = () => {
   const [currentSegmentIndex, setCurrentSegmentIndex] = React.useState(0);
   const [userPosition, setUserPosition] = React.useState<{ lat: number; lng: number } | null>(null);
   const [gpsStatus, setGpsStatus] = React.useState<'searching' | 'active' | 'unavailable'>('searching');
+  const [ttsEnabled, setTtsEnabled] = React.useState(false);
+  const [ttsMessage, setTtsMessage] = React.useState('');
+  const [ttsVisible, setTtsVisible] = React.useState(false);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const prefetchRef = React.useRef<{ index: number; b64: string | null }>({ index: -1, b64: null });
 
   const segRef = React.useRef(activeRoute?.segments[currentSegmentIndex]);
   const advancedRef = React.useRef(false);
@@ -41,6 +48,61 @@ export const NavigateScreen = () => {
   React.useEffect(() => {
     if (!activeRoute) navigate('/results');
   }, [activeRoute]);
+
+  // Speak instruction whenever segment changes or TTS is toggled on
+  React.useEffect(() => {
+    if (!currentSegment || !ttsEnabled) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setTtsVisible(false);
+      return;
+    }
+    let aborted = false;
+
+    audioRef.current?.pause();
+    audioRef.current = null;
+
+    const segText = (seg: typeof currentSegment) =>
+      seg.instruction + (seg.friction !== 'low' && seg.details ? '. ' + seg.details : '');
+
+    const text = segText(currentSegment);
+    setTtsMessage(text);
+    setTtsVisible(true);
+
+    const playB64 = (b64: string) => {
+      if (aborted) return;
+      const audio = new Audio(`data:audio/wav;base64,${b64}`);
+      audioRef.current = audio;
+      audio.play().catch(() => {});
+      audio.onended = () => setTtsVisible(false);
+
+      // Prefetch next segment while current plays
+      const nextSeg = segments[currentSegmentIndex + 1];
+      if (nextSeg) {
+        prefetchRef.current = { index: currentSegmentIndex + 1, b64: null };
+        fetchTTS(segText(nextSeg)).then(nb64 => {
+          if (prefetchRef.current.index === currentSegmentIndex + 1)
+            prefetchRef.current.b64 = nb64;
+        });
+      }
+    };
+
+    // Use prefetch cache if available, else fetch now
+    const cached = prefetchRef.current;
+    if (cached.index === currentSegmentIndex && cached.b64) {
+      prefetchRef.current = { index: -1, b64: null };
+      playB64(cached.b64);
+    } else {
+      fetchTTS(text).then(b64 => { if (!aborted && b64) playB64(b64); });
+    }
+
+    return () => {
+      aborted = true;
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setTtsVisible(false);
+    };
+  }, [currentSegmentIndex, ttsEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // GPS live tracking — runs once for the lifetime of this screen
   React.useEffect(() => {
@@ -83,6 +145,7 @@ export const NavigateScreen = () => {
 
   return (
     <View style={styles.container}>
+      <TTSAlert message={ttsMessage} isVisible={ttsVisible} />
       {/* Map */}
       <View style={styles.mapContainer}>
         <RouteMap
@@ -159,6 +222,14 @@ export const NavigateScreen = () => {
 
         {/* Navigation buttons */}
         <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.voiceBtn, { backgroundColor: ttsEnabled ? '#3b82f6' : th.surface, borderColor: ttsEnabled ? '#3b82f6' : th.border }]}
+            onPress={() => setTtsEnabled(v => !v)}
+          >
+            {ttsEnabled
+              ? <Icons.Volume2 size={20} color="#ffffff" />
+              : <Icons.VolumeX size={20} color={th.textSecondary} />}
+          </TouchableOpacity>
           {currentSegmentIndex > 0 && (
             <TouchableOpacity
               style={[styles.prevBtn, { backgroundColor: th.surface, borderColor: th.border }]}
@@ -226,6 +297,10 @@ const styles = StyleSheet.create({
   },
   detailsText: { flex: 1, fontSize: 13, lineHeight: 18 },
   footer: { flexDirection: 'row', gap: 10 },
+  voiceBtn: {
+    width: 46, height: 50, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
+  },
   prevBtn: {
     width: 46, height: 50, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center', borderWidth: 1,
