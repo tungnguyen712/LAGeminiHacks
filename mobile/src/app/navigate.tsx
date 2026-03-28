@@ -1,19 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRoute } from '../store/RouteContext';
-import { useProfile } from '../store/ProfileContext';
-import { useLanguage } from '../store/LanguageContext';
 import { TTSAlert } from '../components/voice/TTSAlert';
 import { FrictionBadge } from '../components/route/FrictionBadge';
+import { RouteMap } from '../components/map/RouteMap';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const { height } = Dimensions.get('window');
-
 export const NavigateScreen = () => {
-  const { activeRoute } = useRoute();
-  const { selectedProfile } = useProfile();
-  const { t } = useLanguage();
+  const { activeRoute, origin, destination } = useRoute();
   const [currentSegmentIndex, setCurrentSegmentIndex] = React.useState(0);
   const [showTTS, setShowTTS] = React.useState(false);
   const [ttsMessage, setTtsMessage] = React.useState('');
@@ -31,6 +26,12 @@ export const NavigateScreen = () => {
     }
   }, [currentSegmentIndex, currentSegment]);
 
+  React.useEffect(() => {
+    if (!activeRoute) {
+      navigate('/results');
+    }
+  }, [activeRoute, navigate]);
+
   const handleNext = () => {
     if (activeRoute && currentSegmentIndex < activeRoute.segments.length - 1) {
       setCurrentSegmentIndex(currentSegmentIndex + 1);
@@ -39,20 +40,23 @@ export const NavigateScreen = () => {
     }
   };
 
-  if (!activeRoute || !currentSegment) {
-    // We use a useEffect to navigate to avoid the "cannot update during render" warning
-    React.useEffect(() => {
-      navigate('/results');
-    }, [activeRoute, currentSegment, navigate]);
-    return null;
-  }
+  if (!activeRoute || !currentSegment) return null;
+
+  const frictionColor =
+    currentSegment.friction === 'low' ? '#10b981' :
+    currentSegment.friction === 'medium' ? '#f59e0b' : '#ef4444';
 
   return (
     <View style={styles.container}>
       <TTSAlert isVisible={showTTS} message={ttsMessage} />
 
-      <View style={styles.mapPlaceholder}>
-        <Icons.Navigation2 size={48} color="#3b82f6" style={styles.navIcon} />
+      <View style={styles.mapContainer}>
+        <RouteMap
+          origin={origin || ''}
+          destination={destination || ''}
+          frictionColor={frictionColor}
+          height={320}
+        />
         <View style={styles.mapOverlay}>
           <TouchableOpacity onPress={() => navigate('/results')} style={styles.closeButton}>
             <Icons.X size={24} color="#ffffff" />
@@ -62,7 +66,7 @@ export const NavigateScreen = () => {
 
       <View style={styles.instructionCard}>
         <View style={styles.dragHandle} />
-        
+
         <View style={styles.header}>
           <View style={styles.directionIcon}>
             <Icons.ArrowUpRight size={32} color="#ffffff" />
@@ -101,35 +105,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  mapPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.02)',
-  },
-  navIcon: {
-    transform: [{ rotate: '45deg' }],
-    opacity: 0.3,
-  },
+  mapContainer: {
+    position: 'relative',
+  } as any,
   mapOverlay: {
     position: 'absolute',
-    top: 40,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
+    top: 16,
+    right: 16,
+  } as any,
   closeButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(15,23,42,0.8)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
   instructionCard: {
+    flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.95)',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
@@ -207,6 +202,7 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   nextButton: {
+    flex: 1,
     backgroundColor: '#3b82f6',
     height: 56,
     paddingHorizontal: 24,

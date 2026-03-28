@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import * as Icons from 'lucide-react';
 
@@ -24,6 +23,8 @@ export const SearchBar = ({ value, onChangeText, placeholder, icon = 'Search', o
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor="#475569"
+        autoCorrect={false}
+        spellCheck={false}
       />
       {onVoicePress && (
         <TouchableOpacity onPress={onVoicePress} style={styles.voiceButton}>

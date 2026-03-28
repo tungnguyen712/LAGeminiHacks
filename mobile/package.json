@@ -12,6 +12,7 @@
   "dependencies": {
     "@expo/vector-icons": "~14.0.4",
     "@gorhom/bottom-sheet": "^4.6.4",
+    "@react-google-maps/api": "^2.20.8",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@tailwindcss/vite": "^4.2.2",
     "@vitejs/plugin-react": "^6.0.1",

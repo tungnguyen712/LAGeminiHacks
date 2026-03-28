@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, ActivityIndicator } from 'react-native';
 import { useRoute } from '../store/RouteContext';
 import { useProfile } from '../store/ProfileContext';
 import { useLanguage } from '../store/LanguageContext';
-import { SearchBar } from '../components/SearchBar';
+import { PlacesInput } from '../components/PlacesInput';
 import { ProfileBadge } from '../components/profile/ProfileBadge';
 import { VoiceSheet } from '../components/voice/VoiceSheet';
 import * as Icons from 'lucide-react';
@@ -14,14 +14,40 @@ export const SearchScreen = () => {
   const { selectedProfile } = useProfile();
   const { t } = useLanguage();
   const [isVoiceVisible, setIsVoiceVisible] = React.useState(false);
+  const [isLocating, setIsLocating] = React.useState(false);
   const navigate = useNavigate();
 
+  const handleGPS = () => {
+    if (!navigator.geolocation) return;
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+          if (status === 'OK' && results?.[0]) {
+            setOrigin(results[0].formatted_address);
+          } else {
+            setOrigin(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          }
+          setIsLocating(false);
+        });
+      },
+      () => {
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleRecentSelect = (place: string) => {
+    handleGPS();
+    setDestination(place);
+  };
+
   const handleSearch = () => {
-    console.log('Searching for routes...', { origin, destination });
     if (origin && destination) {
       navigate('/results');
-    } else {
-      console.warn('Origin or destination is missing');
     }
   };
 
@@ -40,16 +66,26 @@ export const SearchScreen = () => {
           <View style={styles.searchGroup}>
             <View style={styles.line} />
             <View style={styles.inputWrapper}>
-              <SearchBar
-                value={origin}
-                onChangeText={setOrigin}
-                placeholder={t('currentLocation')}
-                icon="Circle"
-                onVoicePress={() => setIsVoiceVisible(true)}
-              />
-              <SearchBar
+              <View style={styles.originRow}>
+                <View style={{ flex: 1 }}>
+                  <PlacesInput
+                    value={origin}
+                    onPlaceSelect={setOrigin}
+                    placeholder={t('currentLocation')}
+                    icon="Circle"
+                    onVoicePress={() => setIsVoiceVisible(true)}
+                  />
+                </View>
+                <TouchableOpacity onPress={handleGPS} style={styles.gpsButton} disabled={isLocating}>
+                  {isLocating
+                    ? <ActivityIndicator size="small" color="#3b82f6" />
+                    : <Icons.LocateFixed size={20} color="#3b82f6" />
+                  }
+                </TouchableOpacity>
+              </View>
+              <PlacesInput
                 value={destination}
-                onChangeText={setDestination}
+                onPlaceSelect={setDestination}
                 placeholder={t('destination')}
                 icon="MapPin"
                 onVoicePress={() => setIsVoiceVisible(true)}
@@ -60,30 +96,37 @@ export const SearchScreen = () => {
 
         <View style={styles.recentSection}>
           <Text style={styles.sectionTitle}>Recent Places</Text>
-          <TouchableOpacity style={styles.recentItem}>
+          <TouchableOpacity style={styles.recentItem} onPress={() => handleRecentSelect('Central Library, Los Angeles, CA')}>
             <Icons.Clock size={18} color="#94a3b8" />
             <View style={styles.recentText}>
               <Text style={styles.recentTitle}>Central Library</Text>
-              <Text style={styles.recentSubtitle}>123 Main St, Downtown</Text>
+              <Text style={styles.recentSubtitle}>630 W 5th St, Downtown LA</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.recentItem}>
+          <TouchableOpacity style={styles.recentItem} onPress={() => handleRecentSelect('Griffith Park, Los Angeles, CA')}>
             <Icons.Clock size={18} color="#94a3b8" />
             <View style={styles.recentText}>
-              <Text style={styles.recentTitle}>Riverside Park</Text>
+              <Text style={styles.recentTitle}>Griffith Park</Text>
               <Text style={styles.recentSubtitle}>West Entrance, Accessible Path</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.recentItem} onPress={() => handleRecentSelect('Union Station, Los Angeles, CA')}>
+            <Icons.Clock size={18} color="#94a3b8" />
+            <View style={styles.recentText}>
+              <Text style={styles.recentTitle}>Union Station</Text>
+              <Text style={styles.recentSubtitle}>800 N Alameda St, Los Angeles</Text>
             </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable 
+        <Pressable
           style={({ pressed }) => [
             styles.button,
             (!origin || !destination) && styles.buttonDisabled,
             pressed && !(!origin || !destination) && { opacity: 0.8, transform: [{ scale: 0.98 }] }
-          ]} 
+          ]}
           onPress={handleSearch}
           disabled={!origin || !destination}
         >
@@ -154,6 +197,21 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flex: 1,
     gap: 12,
+  },
+  originRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  gpsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(59,130,246,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.2)',
   },
   recentSection: {
     gap: 16,

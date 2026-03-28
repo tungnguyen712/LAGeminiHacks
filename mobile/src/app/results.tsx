@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Dimensions } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable } from 'react-native';
 import { useRoute } from '../store/RouteContext';
 import { useProfile } from '../store/ProfileContext';
 import { useLanguage } from '../store/LanguageContext';
@@ -41,7 +41,7 @@ const MOCK_ROUTES: Route[] = [
 export const ResultsScreen = () => {
   const { activeRoute, setActiveRoute, origin, destination } = useRoute();
   const { selectedProfile } = useProfile();
-  const { t } = useLanguage();
+  useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -81,10 +81,10 @@ export const ResultsScreen = () => {
         </View>
       </View>
 
-      <RouteMap 
-        routes={MOCK_ROUTES} 
-        selectedRouteId={activeRoute?.id || null} 
-        onRouteSelect={(id) => handleRouteSelect(MOCK_ROUTES.find(r => r.id === id)!)} 
+      <RouteMap
+        origin={origin || ''}
+        destination={destination || ''}
+        frictionColor={activeRoute ? (activeRoute.overallFriction === 'low' ? '#10b981' : activeRoute.overallFriction === 'medium' ? '#f59e0b' : '#ef4444') : undefined}
       />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>

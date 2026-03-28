@@ -1,59 +1,55 @@
-import React from 'react';
 import { motion } from 'motion/react';
 
 export const MeshBackground = () => {
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden bg-slate-950">
-      {/* Animated Gradients */}
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      zIndex: 0,
+      overflow: 'hidden',
+      background: 'inherit',
+      pointerEvents: 'none',
+    }}>
       <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
-          x: [0, 100, 0],
-          y: [0, 50, 0],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="absolute -top-[20%] -left-[10%] h-[60%] w-[60%] rounded-full bg-gemini-blue blur-[120px]"
-      />
-      <motion.div
-        animate={{
-          scale: [1.2, 1, 1.2],
-          opacity: [0.2, 0.4, 0.2],
-          x: [0, -80, 0],
-          y: [0, 100, 0],
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="absolute top-[20%] -right-[10%] h-[50%] w-[50%] rounded-full bg-gemini-purple blur-[100px]"
-      />
-      <motion.div
-        animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.1, 0.3, 0.1],
-          x: [0, 50, 0],
-          y: [0, -100, 0],
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="absolute -bottom-[10%] left-[20%] h-[40%] w-[40%] rounded-full bg-gemini-pink blur-[80px]"
-      />
-
-      {/* Grid Pattern Overlay */}
-      <div 
-        className="absolute inset-0 opacity-[0.03]"
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3], x: [0, 80, 0], y: [0, 40, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-          backgroundSize: '32px 32px'
+          position: 'absolute',
+          top: '-20%', left: '-10%',
+          width: '60%', height: '60%',
+          borderRadius: '50%',
+          background: 'var(--color-gemini-blue, #4285f4)',
+          filter: 'blur(120px)',
+          opacity: 0.3,
+          pointerEvents: 'none',
+        }}
+      />
+      <motion.div
+        animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2], x: [0, -60, 0], y: [0, 80, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'absolute',
+          top: '20%', right: '-10%',
+          width: '50%', height: '50%',
+          borderRadius: '50%',
+          background: 'var(--color-gemini-purple, #9b72cb)',
+          filter: 'blur(100px)',
+          opacity: 0.25,
+          pointerEvents: 'none',
+        }}
+      />
+      <motion.div
+        animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.25, 0.1], x: [0, 40, 0], y: [0, -80, 0] }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'absolute',
+          bottom: '-10%', left: '20%',
+          width: '40%', height: '40%',
+          borderRadius: '50%',
+          background: 'var(--color-gemini-pink, #d96570)',
+          filter: 'blur(80px)',
+          opacity: 0.2,
+          pointerEvents: 'none',
         }}
       />
     </div>

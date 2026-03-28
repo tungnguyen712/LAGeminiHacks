@@ -1,6 +1,5 @@
-import React, { useRef } from 'react';
-import { View, StyleSheet, Dimensions, Platform, PanResponder } from 'react-native';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { View, StyleSheet, Dimensions, Platform } from 'react-native';
 import { ProfileProvider } from '../store/ProfileContext';
 import { RouteProvider } from '../store/RouteContext';
 import { LanguageProvider, useLanguage, ACCENT_COLORS, THEME_MODES } from '../store/LanguageContext';
@@ -14,20 +13,9 @@ const { width: windowWidth } = Dimensions.get('window');
 const isDesktop = Platform.OS === 'web' && windowWidth > 600;
 
 const InnerLayout = ({ children }: LayoutProps) => {
-  const navigate = useNavigate();
   const { accent, themeMode } = useLanguage();
   const bg = THEME_MODES[themeMode].bg;
   const accentGlow = ACCENT_COLORS[accent].glow;
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 20 && Math.abs(g.dy) < 10,
-      onPanResponderRelease: (_, g) => {
-        if (g.dx > 50) navigate(-1);
-        else if (g.dx < -50) navigate(1);
-      },
-    })
-  ).current;
 
   return (
     <View style={[styles.root, { backgroundColor: isDesktop ? '#080d14' : bg }]}>
@@ -38,7 +26,6 @@ const InnerLayout = ({ children }: LayoutProps) => {
           { backgroundColor: bg },
           isDesktop && { shadowColor: accentGlow },
         ]}
-        {...panResponder.panHandlers}
       >
         <MeshBackground />
         <View style={styles.content}>
