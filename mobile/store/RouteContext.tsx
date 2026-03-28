@@ -1,38 +1,42 @@
-import React, { createContext, useContext, useState } from 'react';
-import type { Route, Segment } from '../types/Route';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { Route } from '../types/Route';
 
-interface RouteContextValue {
-  routes: Route[];
-  setRoutes: (r: Route[]) => void;
-  selectedRoute: Route | null;
-  setSelectedRoute: (r: Route | null) => void;
-  selectedSegment: Segment | null;
-  setSelectedSegment: (s: Segment | null) => void;
+interface RouteContextType {
+  origin: string;
+  setOrigin: (origin: string) => void;
+  destination: string;
+  setDestination: (destination: string) => void;
+  activeRoute: Route | null;
+  setActiveRoute: (route: Route | null) => void;
 }
 
-const RouteContext = createContext<RouteContextValue>({
-  routes: [],
-  setRoutes: () => {},
-  selectedRoute: null,
-  setSelectedRoute: () => {},
-  selectedSegment: null,
-  setSelectedSegment: () => {},
-});
+const RouteContext = createContext<RouteContextType | undefined>(undefined);
 
-export function RouteProvider({ children }: { children: React.ReactNode }) {
-  const [routes, setRoutes] = useState<Route[]>([]);
-  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
-  const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
+export const RouteProvider = ({ children }: { children: ReactNode }) => {
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
+  const [activeRoute, setActiveRoute] = useState<Route | null>(null);
 
   return (
     <RouteContext.Provider
-      value={{ routes, setRoutes, selectedRoute, setSelectedRoute, selectedSegment, setSelectedSegment }}
+      value={{
+        origin,
+        setOrigin,
+        destination,
+        setDestination,
+        activeRoute,
+        setActiveRoute,
+      }}
     >
       {children}
     </RouteContext.Provider>
   );
-}
+};
 
-export function useRouteContext() {
-  return useContext(RouteContext);
-}
+export const useRoute = () => {
+  const context = useContext(RouteContext);
+  if (context === undefined) {
+    throw new Error('useRoute must be used within a RouteProvider');
+  }
+  return context;
+};

@@ -1,0 +1,5 @@
+{
+  "name": "PathCorrect",
+  "description": "Accessibility-aware route comparator that uses AI to analyze friction and provide spoken guidance for wheelchair, low-vision, and stroller users.",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"]
+}

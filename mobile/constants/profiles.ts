@@ -1,22 +1,25 @@
-import type { UserProfile } from '../types/Profile';
+import { AccessibilityProfile } from '../types/Profile';
 
-export const PROFILES: UserProfile[] = [
+export const ACCESSIBILITY_PROFILES: AccessibilityProfile[] = [
   {
-    type: 'wheelchair',
-    label: 'Wheelchair',
-    description: 'Avoids stairs, steep slopes, and unpaved surfaces',
-    icon: '♿',
+    id: 'wheelchair',
+    name: 'Wheelchair User',
+    description: 'Prioritizes ramps, elevators, and smooth surfaces. Avoids steep slopes and curbs.',
+    icon: 'accessibility',
+    color: '#3b82f6',
   },
   {
-    type: 'low-vision',
-    label: 'Low Vision',
-    description: 'Prefers well-lit paths with tactile indicators',
-    icon: '👁️',
+    id: 'low-vision',
+    name: 'Low-Vision User',
+    description: 'Prioritizes audio signals, clear pedestrian paths, and simple junctions.',
+    icon: 'eye',
+    color: '#a855f7',
   },
   {
-    type: 'stroller',
-    label: 'Stroller',
-    description: 'Avoids stairs and narrow passages',
-    icon: '🍼',
+    id: 'stroller',
+    name: 'Stroller User',
+    description: 'Prioritizes step-free access and wide paths. Avoids narrow gates and cobbles.',
+    icon: 'baby',
+    color: '#10b981',
   },
 ];
