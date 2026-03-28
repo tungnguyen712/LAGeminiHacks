@@ -1,0 +1,68 @@
+{
+  "language": "es-ES",
+  "scores": {
+    "seg-1a": {
+      "frictionScore": 0.2,
+      "confidence": 0.9,
+      "reasons": [
+        "Camino pavimentado amplio con rampas"
+      ],
+      "recommendation": "Buena ruta para usuarios de silla de ruedas",
+      "level": "LOW"
+    },
+    "seg-1b": {
+      "frictionScore": 0.85,
+      "confidence": 0.95,
+      "reasons": [
+        "Varias escaleras sin rampa alternativa"
+      ],
+      "recommendation": "Toma el desvio por la rampa Janss Steps",
+      "level": "HIGH"
+    },
+    "seg-1c": {
+      "frictionScore": 0.45,
+      "confidence": 0.8,
+      "reasons": [
+        "Pendiente moderada"
+      ],
+      "recommendation": "Transitable para cochecitos con precaucion",
+      "level": "MEDIUM"
+    },
+    "seg-2a": {
+      "frictionScore": 0.15,
+      "confidence": 0.92,
+      "reasons": [
+        "Rampa completamente accesible"
+      ],
+      "recommendation": "Excelente para todos los perfiles de movilidad",
+      "level": "LOW"
+    },
+    "seg-2b": {
+      "frictionScore": 0.25,
+      "confidence": 0.85,
+      "reasons": [
+        "Carril peatonal dedicado"
+      ],
+      "recommendation": "Ruta recomendada para silla de ruedas",
+      "level": "LOW"
+    },
+    "seg-3a": {
+      "frictionScore": 0.3,
+      "confidence": 0.88,
+      "reasons": [
+        "Pendiente suave"
+      ],
+      "recommendation": "Manejable para todos los perfiles",
+      "level": "LOW"
+    },
+    "seg-3b": {
+      "frictionScore": 0.55,
+      "confidence": 0.75,
+      "reasons": [
+        "Algunas secciones adoquinadas"
+      ],
+      "recommendation": "Usuarios con baja vision pueden encontrar el trafico dificil",
+      "level": "MEDIUM"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "PathSense",
+    "slug": "pathsense",
+    "version": "1.0.0",
+    "scheme": "pathsense",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1C1C1E"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pathsense.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "PathSense needs your location to find accessible routes near you.",
+        "NSMicrophoneUsageDescription": "PathSense uses the microphone for voice navigation with Gemini Live."
+      }
+    },
+    "android": {
+      "package": "com.pathsense.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "RECORD_AUDIO"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-location",
+      [
+        "expo-camera",
+        { "cameraPermission": "PathSense uses the camera for visual route assistance." }
+      ]
+    ]
+  }
+}

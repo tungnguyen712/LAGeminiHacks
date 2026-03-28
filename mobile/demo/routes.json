@@ -1,0 +1,167 @@
+{
+  "routes": [
+    {
+      "id": "route-fastest",
+      "label": "fastest",
+      "durationSeconds": 720,
+      "distanceMeters": 950,
+      "overallFriction": "MEDIUM",
+      "polylineEncoded": "",
+      "segments": [
+        {
+          "id": "seg-1a",
+          "description": "Bruin Walk from Ackerman Union to Powell Library",
+          "startLat": 34.0706,
+          "startLng": -118.4434,
+          "endLat": 34.0681,
+          "endLng": -118.4414,
+          "distanceMeters": 320,
+          "friction": {
+            "frictionScore": 0.2,
+            "confidence": 0.9,
+            "reasons": [
+              "Wide paved path with curb cuts",
+              "Well-lit at night"
+            ],
+            "recommendation": "Good path for wheelchair users",
+            "level": "LOW"
+          }
+        },
+        {
+          "id": "seg-1b",
+          "description": "Steps from Powell Library to Royce Hall",
+          "startLat": 34.0681,
+          "startLng": -118.4414,
+          "endLat": 34.0697,
+          "endLng": -118.4421,
+          "distanceMeters": 230,
+          "friction": {
+            "frictionScore": 0.85,
+            "confidence": 0.95,
+            "reasons": [
+              "Multiple stairs with no ramp alternative",
+              "Steep grade"
+            ],
+            "recommendation": "Take the Janss Steps ramp detour instead",
+            "level": "HIGH"
+          }
+        },
+        {
+          "id": "seg-1c",
+          "description": "Charles E. Young Drive past Royce Hall",
+          "startLat": 34.0697,
+          "startLng": -118.4421,
+          "endLat": 34.0712,
+          "endLng": -118.4435,
+          "distanceMeters": 400,
+          "friction": {
+            "frictionScore": 0.45,
+            "confidence": 0.8,
+            "reasons": [
+              "Moderate slope",
+              "Sidewalk narrows near construction"
+            ],
+            "recommendation": "Passable for strollers with caution",
+            "level": "MEDIUM"
+          }
+        }
+      ]
+    },
+    {
+      "id": "route-low-friction",
+      "label": "low-friction",
+      "durationSeconds": 960,
+      "distanceMeters": 1200,
+      "overallFriction": "LOW",
+      "polylineEncoded": "",
+      "segments": [
+        {
+          "id": "seg-2a",
+          "description": "Westwood Plaza to Bruin Walk via ramp",
+          "startLat": 34.0706,
+          "startLng": -118.4434,
+          "endLat": 34.0695,
+          "endLng": -118.443,
+          "distanceMeters": 180,
+          "friction": {
+            "frictionScore": 0.15,
+            "confidence": 0.92,
+            "reasons": [
+              "Fully accessible ramp",
+              "Smooth pavement"
+            ],
+            "recommendation": "Excellent for all mobility profiles",
+            "level": "LOW"
+          }
+        },
+        {
+          "id": "seg-2b",
+          "description": "Campus Drive along medical center",
+          "startLat": 34.0695,
+          "startLng": -118.443,
+          "endLat": 34.0712,
+          "endLng": -118.445,
+          "distanceMeters": 520,
+          "friction": {
+            "frictionScore": 0.25,
+            "confidence": 0.85,
+            "reasons": [
+              "Dedicated pedestrian lane",
+              "Curb cuts at every crossing"
+            ],
+            "recommendation": "Recommended route for wheelchair users",
+            "level": "LOW"
+          }
+        }
+      ]
+    },
+    {
+      "id": "route-balanced",
+      "label": "balanced",
+      "durationSeconds": 840,
+      "distanceMeters": 1050,
+      "overallFriction": "MEDIUM",
+      "polylineEncoded": "",
+      "segments": [
+        {
+          "id": "seg-3a",
+          "description": "Ackerman Union north exit to Dickson Plaza",
+          "startLat": 34.0706,
+          "startLng": -118.4434,
+          "endLat": 34.0715,
+          "endLng": -118.444,
+          "distanceMeters": 280,
+          "friction": {
+            "frictionScore": 0.3,
+            "confidence": 0.88,
+            "reasons": [
+              "Gentle slope",
+              "Paved path with occasional cracks"
+            ],
+            "recommendation": "Manageable for all profiles",
+            "level": "LOW"
+          }
+        },
+        {
+          "id": "seg-3b",
+          "description": "Dickson Court past Humanities",
+          "startLat": 34.0715,
+          "startLng": -118.444,
+          "endLat": 34.072,
+          "endLng": -118.4425,
+          "distanceMeters": 470,
+          "friction": {
+            "frictionScore": 0.55,
+            "confidence": 0.75,
+            "reasons": [
+              "Some cobblestone sections",
+              "Moderate foot traffic"
+            ],
+            "recommendation": "Low-vision users may find crowding challenging",
+            "level": "MEDIUM"
+          }
+        }
+      ]
+    }
+  ]
+}
