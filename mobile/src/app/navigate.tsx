@@ -8,6 +8,7 @@ import { RouteMap } from '../components/map/RouteMap';
 import { TTSAlert } from '../components/voice/TTSAlert';
 import { fetchTTS, fetchRoutes } from '../services/api';
 import { subscribeToNearbyReports, AccessibilityReport } from '../services/reports';
+import { LiveCameraGuide } from '../components/LiveCameraGuide';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -349,6 +350,19 @@ export const NavigateScreen = () => {
           {rerouteError && (
             <Text style={styles.rerouteError}>{rerouteError}</Text>
           )}
+
+          {/* Live camera guidance */}
+          <LiveCameraGuide
+            currentInstruction={currentSegment.instruction}
+            currentDistance={currentSegment.distance}
+            destination={destination || ''}
+            profileName={selectedProfile?.name}
+            th={th}
+            onSpeak={(text) => {
+              setTtsMessage(text);
+              setTtsVisible(true);
+            }}
+          />
 
           {/* Navigation buttons */}
           <View style={styles.footer}>
