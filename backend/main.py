@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import routes, friction, tts, live
+from routers import routes, friction, reroute, tts, live
 
 app = FastAPI(title="PathSense API", version="1.0.0")
 
@@ -13,6 +13,7 @@ app.add_middleware(
 
 app.include_router(routes.router, prefix="/api")
 app.include_router(friction.router, prefix="/api")
+app.include_router(reroute.router, prefix="/api")
 app.include_router(tts.router, prefix="/api")
 app.include_router(live.router, prefix="/api")
 
