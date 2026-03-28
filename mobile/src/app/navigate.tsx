@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRoute } from '../store/RouteContext';
+import { useProfile } from '../store/ProfileContext';
 import { useLanguage, THEME_MODES } from '../store/LanguageContext';
 import { FrictionBadge } from '../components/route/FrictionBadge';
 import { RouteMap } from '../components/map/RouteMap';
 import { TTSAlert } from '../components/voice/TTSAlert';
-import { fetchTTS } from '../services/api';
+import { fetchTTS, rerouteSegment } from '../services/api';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,19 +19,41 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
 }
 
 export const NavigateScreen = () => {
-  const { activeRoute, origin, destination } = useRoute();
+  const { activeRoute, setActiveRoute, origin, destination } = useRoute();
+  const { selectedProfile } = useProfile();
   const { themeMode } = useLanguage();
   const th = THEME_MODES[themeMode];
   const navigate = useNavigate();
 
   const [currentSegmentIndex, setCurrentSegmentIndex] = React.useState(0);
   const [userPosition, setUserPosition] = React.useState<{ lat: number; lng: number } | null>(null);
+  const [userHeading, setUserHeading] = React.useState<number | null>(null);
   const [gpsStatus, setGpsStatus] = React.useState<'searching' | 'active' | 'unavailable'>('searching');
   const [ttsEnabled, setTtsEnabled] = React.useState(false);
   const [ttsMessage, setTtsMessage] = React.useState('');
   const [ttsVisible, setTtsVisible] = React.useState(false);
+  const [isRerouting, setIsRerouting] = React.useState(false);
+  const [rerouteError, setRerouteError] = React.useState<string | null>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const prefetchRef = React.useRef<{ index: number; b64: string | null }>({ index: -1, b64: null });
+
+  const handleReroute = async () => {
+    if (!currentSegment || !activeRoute) return;
+    setIsRerouting(true);
+    setRerouteError(null);
+    try {
+      const replacements = await rerouteSegment(currentSegment, selectedProfile?.id ?? 'wheelchair');
+      const newSegments = activeRoute.segments.flatMap((s, i) =>
+        i === currentSegmentIndex ? replacements : [s]
+      );
+      setActiveRoute({ ...activeRoute, segments: newSegments });
+    } catch {
+      setRerouteError('No detour found. Try the next step.');
+      setTimeout(() => setRerouteError(null), 3000);
+    } finally {
+      setIsRerouting(false);
+    }
+  };
 
   const segRef = React.useRef(activeRoute?.segments[currentSegmentIndex]);
   const advancedRef = React.useRef(false);
@@ -113,8 +136,9 @@ export const NavigateScreen = () => {
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
+        const { latitude: lat, longitude: lng, heading } = pos.coords;
         setUserPosition({ lat, lng });
+        if (heading !== null) setUserHeading(heading);
         setGpsStatus('active');
 
         // Auto-advance when within 40 m of current segment's end
@@ -156,6 +180,7 @@ export const NavigateScreen = () => {
           isDark={th.isDark}
           segments={segments}
           userPosition={userPosition}
+          userHeading={userHeading}
           centerOnUser={gpsStatus === 'active'}
         />
 
@@ -218,6 +243,21 @@ export const NavigateScreen = () => {
               </Text>
             ) : null}
           </View>
+        )}
+
+        {/* Reroute button */}
+        <TouchableOpacity
+          style={[styles.rerouteBtn, { borderColor: '#ef4444' }, isRerouting && { opacity: 0.6 }]}
+          onPress={handleReroute}
+          disabled={isRerouting}
+        >
+          {isRerouting
+            ? <><ActivityIndicator size="small" color="#ef4444" /><Text style={styles.rerouteBtnText}>Finding detour…</Text></>
+            : <><Icons.TriangleAlert size={16} color="#ef4444" /><Text style={styles.rerouteBtnText}>Path Blocked — Reroute</Text></>
+          }
+        </TouchableOpacity>
+        {rerouteError && (
+          <Text style={styles.rerouteError}>{rerouteError}</Text>
         )}
 
         {/* Navigation buttons */}
@@ -310,4 +350,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
   nextBtnText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  rerouteBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    height: 46, borderRadius: 14, borderWidth: 1.5,
+    backgroundColor: 'rgba(239,68,68,0.08)', cursor: 'pointer' as any,
+  },
+  rerouteBtnText: { fontSize: 14, fontWeight: '700', color: '#ef4444' },
+  rerouteError: { fontSize: 12, color: '#ef4444', textAlign: 'center', marginTop: -6 },
 });

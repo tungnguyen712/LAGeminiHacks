@@ -25,15 +25,8 @@ export const SearchScreen = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        const geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-          if (status === 'OK' && results?.[0]) {
-            setOrigin(results[0].formatted_address);
-          } else {
-            setOrigin(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
-          }
-          setIsLocating(false);
-        });
+        setOrigin(`${latitude},${longitude}`);
+        setIsLocating(false);
       },
       () => { setIsLocating(false); },
       { enableHighAccuracy: true, timeout: 10000 }

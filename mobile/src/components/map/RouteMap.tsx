@@ -29,6 +29,7 @@ interface RouteMapProps {
   segments?: RouteSegment[];
   onSegmentClick?: (seg: RouteSegment) => void;
   userPosition?: { lat: number; lng: number } | null;
+  userHeading?: number | null;
   centerOnUser?: boolean;
   /** Padding (px) reserved for the bottom sheet when fitting route bounds */
   fitPaddingBottom?: number;
@@ -42,6 +43,7 @@ export const RouteMap = ({
   segments,
   onSegmentClick,
   userPosition,
+  userHeading = null,
   centerOnUser = false,
   fitPaddingBottom = 60,
 }: RouteMapProps) => {
@@ -170,23 +172,31 @@ export const RouteMap = ({
     });
   }, [segments, onSegmentClick]);
 
-  // GPS blue dot — update/create when userPosition changes
+  // GPS arrow — update position and rotation when userPosition/heading changes
   useEffect(() => {
     if (!mapRef.current || !userPosition) return;
     const pos = { lat: userPosition.lat, lng: userPosition.lng };
 
+    const icon: google.maps.Symbol = {
+      // Forward-pointing arrow
+      path: 'M 0,-1 L 0.6,0.8 L 0,0.4 L -0.6,0.8 Z',
+      fillColor: '#3b82f6',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 0.4,
+      scale: 18,
+      rotation: userHeading ?? 0,
+      anchor: new window.google.maps.Point(0, 0),
+    };
+
     if (gpsDotRef.current) {
       gpsDotRef.current.setPosition(pos);
+      gpsDotRef.current.setIcon(icon);
     } else {
       gpsDotRef.current = new window.google.maps.Marker({
         position: pos,
         map: mapRef.current,
-        icon: {
-          path: (window.google.maps.SymbolPath as any).CIRCLE,
-          fillColor: '#3b82f6', fillOpacity: 1,
-          strokeColor: '#ffffff', strokeWeight: 3,
-          scale: 10,
-        },
+        icon,
         title: 'Your location',
         zIndex: 100,
       });
@@ -195,7 +205,7 @@ export const RouteMap = ({
     if (centerOnUser) {
       mapRef.current.panTo(pos);
     }
-  }, [userPosition, centerOnUser]);
+  }, [userPosition, userHeading, centerOnUser]);
 
   return (
     <View style={height !== undefined ? [styles.container, { height }] : styles.containerFull}>
