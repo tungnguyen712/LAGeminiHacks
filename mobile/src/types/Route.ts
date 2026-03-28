@@ -21,5 +21,6 @@ export interface Route {
   estimatedTime: string;
   overallFriction: FrictionLevel;
   confidence: number;
+  mode: string; // 'walking' | 'transit'
   segments: RouteSegment[];
 }

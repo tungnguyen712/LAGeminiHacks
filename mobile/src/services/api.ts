@@ -5,6 +5,7 @@
 import axios from 'axios';
 import { Route, RouteSegment, FrictionLevel } from '../types/Route';
 
+
 const BASE = (process.env.BACKEND_URL as string) || 'http://localhost:8000';
 
 // ── Backend response types ────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ function toAppRoute(r: BackendRoute): Route {
     estimatedTime: `${mins} min`,
     overallFriction: r.overallFriction.toLowerCase() as FrictionLevel,
     confidence: Math.round(avgConf * 100) / 100,
+    mode: r.mode ?? 'walking',
     segments: segs,
   };
 }
@@ -137,4 +139,26 @@ export async function fetchRoutes(
   }));
 
   return enriched.map(toAppRoute);
+}
+
+/**
+ * Request a local detour around a HIGH-friction segment.
+ * Returns replacement RouteSegment[] (not yet friction-scored).
+ */
+export async function rerouteSegment(
+  segment: RouteSegment,
+  profile: string,
+): Promise<RouteSegment[]> {
+  const res = await axios.post<{
+    segmentId: string;
+    replacementSegments: BackendSegment[];
+  }>(`${BASE}/api/reroute`, {
+    segmentId: segment.id,
+    startLat: segment.startLat,
+    startLng: segment.startLng,
+    endLat: segment.endLat,
+    endLng: segment.endLng,
+    profile,
+  });
+  return (res.data.replacementSegments ?? []).map(toAppSegment);
 }

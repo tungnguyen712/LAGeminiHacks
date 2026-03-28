@@ -93,6 +93,66 @@ export const PlacesInput = ({
     }
   }, []);
 
+  // Constrain the PAC dropdown: watch body for insertion, then watch the pac-container's
+  // own style attribute so we override every time Google repositions/resizes it.
+  useEffect(() => {
+    let pacObserver: MutationObserver | null = null;
+
+    const applyFix = (pac: HTMLElement) => {
+      if (!inputRef.current) return;
+      // Only act when THIS input is the active one — prevents competing observers
+      // between multiple PlacesInput instances from fighting each other infinitely.
+      if (document.activeElement !== inputRef.current) return;
+
+      // Walk up the DOM to find the phone-frame container (first overflow:hidden
+      // ancestor with a meaningful width). Both inputs share the same frame so
+      // the dropdown width ends up identical regardless of which input is active.
+      let frameEl: HTMLElement | null = null;
+      let ancestor: HTMLElement | null = inputRef.current.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        const cs = window.getComputedStyle(ancestor);
+        if ((cs.overflow === 'hidden' || cs.overflowX === 'hidden') && ancestor.offsetWidth >= 300) {
+          frameEl = ancestor;
+          break;
+        }
+        ancestor = ancestor.parentElement;
+      }
+
+      const inputRect = inputRef.current.getBoundingClientRect();
+      const frameRect = frameEl?.getBoundingClientRect();
+      // Span from this input's left edge to the frame's right edge (- 8 px margin)
+      const maxRight = frameRect ? frameRect.right - 8 : window.innerWidth - 8;
+      const w = `${maxRight - inputRect.left}px`;
+      const l = `${inputRect.left}px`;
+      if (pac.style.width === w && pac.style.left === l) return;
+      pac.style.setProperty('width', w, 'important');
+      pac.style.setProperty('max-width', w, 'important');
+      pac.style.setProperty('left', l, 'important');
+    };
+
+    const attachPacObserver = (pac: HTMLElement) => {
+      applyFix(pac);
+      pacObserver = new MutationObserver(() => applyFix(pac));
+      pacObserver.observe(pac, { attributes: true, attributeFilter: ['style'] });
+    };
+
+    // Phase 1: watch body for the pac-container being added to the DOM
+    const bodyObserver = new MutationObserver(() => {
+      const pac = document.querySelector('.pac-container') as HTMLElement | null;
+      if (pac && !pacObserver) attachPacObserver(pac);
+    });
+    bodyObserver.observe(document.body, { childList: true });
+
+    // In case the pac-container already exists (e.g. shared across inputs)
+    const existing = document.querySelector('.pac-container') as HTMLElement | null;
+    if (existing) attachPacObserver(existing);
+
+    return () => {
+      bodyObserver.disconnect();
+      pacObserver?.disconnect();
+    };
+  }, []);
+
   return (
     <div style={{ ...containerStyle, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}>
       <div style={iconContainerStyle}>

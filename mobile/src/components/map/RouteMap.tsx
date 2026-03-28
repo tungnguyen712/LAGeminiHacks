@@ -28,23 +28,29 @@ interface RouteMapProps {
   isDark?: boolean;
   segments?: RouteSegment[];
   onSegmentClick?: (seg: RouteSegment) => void;
+  userPosition?: { lat: number; lng: number } | null;
+  centerOnUser?: boolean;
+  /** Padding (px) reserved for the bottom sheet when fitting route bounds */
+  fitPaddingBottom?: number;
 }
 
 export const RouteMap = ({
   origin,
   destination,
-  frictionColor,
-  height = 260,
+  height,        // undefined = fill parent via containerFull (flex:1)
   isDark = true,
   segments,
   onSegmentClick,
+  userPosition,
+  centerOnUser = false,
+  fitPaddingBottom = 60,
 }: RouteMapProps) => {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const rendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const polylineRefs = useRef<google.maps.Polyline[]>([]);
   const markerRefs = useRef<google.maps.Marker[]>([]);
-  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const gpsDotRef = useRef<google.maps.Marker | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Initialise map once
@@ -65,12 +71,11 @@ export const RouteMap = ({
     });
 
     rendererRef.current = new window.google.maps.DirectionsRenderer({
-      suppressPolylines: true, // we draw our own per-segment polylines
-      suppressMarkers: true,   // we draw our own friendly markers
+      suppressPolylines: true,
+      suppressMarkers: true,
+      preserveViewport: true, // we call fitBounds manually with sheet padding
     });
     rendererRef.current.setMap(mapRef.current);
-
-    infoWindowRef.current = new window.google.maps.InfoWindow();
   }, [isDark]);
 
   // Fetch directions when origin/destination change
@@ -85,7 +90,15 @@ export const RouteMap = ({
           rendererRef.current?.setDirections(result);
           setError(null);
 
-          // Clear old markers
+          // Fit the route in the visible area above the bottom sheet
+          const bounds = result.routes[0]?.bounds;
+          if (bounds && mapRef.current) {
+            mapRef.current.fitBounds(bounds, {
+              top: 60, right: 20, bottom: fitPaddingBottom, left: 20,
+            });
+          }
+
+          // Origin / destination markers
           markerRefs.current.forEach(m => m.setMap(null));
           markerRefs.current = [];
 
@@ -124,21 +137,17 @@ export const RouteMap = ({
     );
   }, [origin, destination]);
 
-  // Draw per-segment friction polylines whenever segments change
+  // Draw per-segment friction polylines
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Clear previous polylines
     polylineRefs.current.forEach(p => p.setMap(null));
     polylineRefs.current = [];
 
     if (!segments?.length) return;
 
     segments.forEach((seg) => {
-      if (
-        seg.startLat == null || seg.startLng == null ||
-        seg.endLat == null   || seg.endLng == null
-      ) return;
+      if (seg.startLat == null || seg.startLng == null || seg.endLat == null || seg.endLng == null) return;
 
       const style = FRICTION_STROKE[seg.friction] ?? FRICTION_STROKE.low;
 
@@ -154,39 +163,42 @@ export const RouteMap = ({
         map:           mapRef.current!,
       });
 
-      polyline.addListener('click', (e: google.maps.MapMouseEvent) => {
-        onSegmentClick?.(seg);
-
-        // Show InfoWindow on the map at click position
-        if (infoWindowRef.current && e.latLng) {
-          const frictionLabel = seg.friction.toUpperCase();
-          const detailsHtml = seg.details
-            ? `<div style="margin-top:4px;font-size:12px;color:#64748b;font-style:italic">${seg.details}</div>`
-            : '';
-          infoWindowRef.current.setContent(`
-            <div style="max-width:220px;font-family:sans-serif;padding:4px 2px">
-              <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:4px">
-                ${seg.instruction}
-              </div>
-              <span style="
-                display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;
-                background:${style.color}22;color:${style.color}
-              ">${frictionLabel} FRICTION</span>
-              <div style="font-size:12px;color:#64748b;margin-top:4px">${seg.distance}</div>
-              ${detailsHtml}
-            </div>
-          `);
-          infoWindowRef.current.setPosition(e.latLng);
-          infoWindowRef.current.open(mapRef.current!);
-        }
-      });
+      // Click → notify parent only (no InfoWindow — parent shows its own callout)
+      polyline.addListener('click', () => onSegmentClick?.(seg));
 
       polylineRefs.current.push(polyline);
     });
   }, [segments, onSegmentClick]);
 
+  // GPS blue dot — update/create when userPosition changes
+  useEffect(() => {
+    if (!mapRef.current || !userPosition) return;
+    const pos = { lat: userPosition.lat, lng: userPosition.lng };
+
+    if (gpsDotRef.current) {
+      gpsDotRef.current.setPosition(pos);
+    } else {
+      gpsDotRef.current = new window.google.maps.Marker({
+        position: pos,
+        map: mapRef.current,
+        icon: {
+          path: (window.google.maps.SymbolPath as any).CIRCLE,
+          fillColor: '#3b82f6', fillOpacity: 1,
+          strokeColor: '#ffffff', strokeWeight: 3,
+          scale: 10,
+        },
+        title: 'Your location',
+        zIndex: 100,
+      });
+    }
+
+    if (centerOnUser) {
+      mapRef.current.panTo(pos);
+    }
+  }, [userPosition, centerOnUser]);
+
   return (
-    <View style={[styles.container, { height }]}>
+    <View style={height !== undefined ? [styles.container, { height }] : styles.containerFull}>
       <div ref={mapDivRef} style={{ width: '100%', height: '100%' }} />
       {error && (
         <View style={styles.errorOverlay}>
@@ -199,6 +211,7 @@ export const RouteMap = ({
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden', position: 'relative' } as any,
+  containerFull: { flex: 1, overflow: 'hidden', position: 'relative' } as any,
   errorOverlay: {
     position: 'absolute', bottom: 8, left: 8,
     backgroundColor: 'rgba(239,68,68,0.85)',

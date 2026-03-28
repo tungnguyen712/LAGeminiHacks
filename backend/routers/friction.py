@@ -20,6 +20,7 @@ Total Gemini calls: ceil(N/6) batch calls + K vision calls  (K ≤ N)
 Typical wall time for 3 routes × 10 steps:  ~4–5 s with parallelism.
 """
 import asyncio
+import hashlib
 
 from fastapi import APIRouter
 
@@ -31,6 +32,18 @@ from services import gemini, la_metro, overpass, street_view
 router = APIRouter()
 
 BATCH_SIZE = gemini.BATCH_SIZE
+
+# ---------------------------------------------------------------------------
+# In-memory friction score cache
+# Key: md5 of (seg_id + description + coords + profile + language_code)
+# Value: fully-resolved FrictionScoreResponse (post-clamp, post-vision)
+# ---------------------------------------------------------------------------
+_score_cache: dict[str, FrictionScoreResponse] = {}
+
+
+def _cache_key(seg: SegmentIn, profile: str, language_code: str) -> str:
+    raw = f"{seg.id}|{seg.description}|{seg.start_lat}|{seg.start_lng}|{seg.end_lat}|{seg.end_lng}|{profile}|{language_code}"
+    return hashlib.md5(raw.encode()).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -102,9 +115,23 @@ async def get_friction(req: FrictionRequest) -> dict:
     scores: dict[str, FrictionScoreResponse] = {}
 
     # ------------------------------------------------------------------ #
+    # Cache — return already-scored segments immediately                  #
+    # ------------------------------------------------------------------ #
+    cache_keys = {s.id: _cache_key(s, req.profile, req.language_code) for s in req.segments}
+    uncached_segments = [s for s in req.segments if cache_keys[s.id] not in _score_cache]
+
+    for seg in req.segments:
+        cached = _score_cache.get(cache_keys[seg.id])
+        if cached is not None:
+            scores[seg.id] = cached
+
+    if not uncached_segments:
+        return FrictionResponse(scores=scores).model_dump(by_alias=True)
+
+    # ------------------------------------------------------------------ #
     # Stage 0 — Parallel pre-fetch: OSM + LA Metro alerts                #
     # ------------------------------------------------------------------ #
-    segs_with_coords = [s for s in req.segments if _has_coords(s)]
+    segs_with_coords = [s for s in uncached_segments if _has_coords(s)]
     osm_tags: dict[str, dict] = {}
 
     # Fetch LA Metro alerts concurrently with OSM (non-fatal)
@@ -129,8 +156,8 @@ async def get_friction(req: FrictionRequest) -> dict:
     # Stage 2 — Parallel batch text scoring                               #
     # ------------------------------------------------------------------ #
     batches = [
-        req.segments[i: i + BATCH_SIZE]
-        for i in range(0, len(req.segments), BATCH_SIZE)
+        uncached_segments[i: i + BATCH_SIZE]
+        for i in range(0, len(uncached_segments), BATCH_SIZE)
     ]
 
     batch_results = await asyncio.gather(
@@ -178,7 +205,7 @@ async def get_friction(req: FrictionRequest) -> dict:
     # Walk segments where Gemini produced a MEDIUM guess with no supporting
     # evidence are clamped to LOW.  This prevents generic "Turn right"
     # navigation instructions from appearing as noise-level MEDIUM friction.
-    seg_lookup = {s.id: s for s in req.segments}
+    seg_lookup = {s.id: s for s in uncached_segments}
     for seg_id, sc in list(scores.items()):
         seg = seg_lookup.get(seg_id)
         if seg is None or getattr(seg, "segment_type", "walk") != "walk":
@@ -199,7 +226,7 @@ async def get_friction(req: FrictionRequest) -> dict:
     # Stage 3 — Vision re-score suspicious segments                       #
     # ------------------------------------------------------------------ #
     suspicious = [
-        seg for seg in req.segments
+        seg for seg in uncached_segments
         if _has_coords(seg) and seg.id in scores and (
             scores[seg.id].friction_score >= gemini.SUSPICIOUS_SCORE_THRESHOLD
             or scores[seg.id].confidence < gemini.SUSPICIOUS_CONFIDENCE_THRESHOLD
@@ -227,5 +254,12 @@ async def get_friction(req: FrictionRequest) -> dict:
             seg_id, vision_score = outcome
             if vision_score is not None:
                 scores[seg_id] = vision_score  # override with richer visual evidence
+
+    # ------------------------------------------------------------------ #
+    # Store freshly-scored segments in cache                              #
+    # ------------------------------------------------------------------ #
+    for seg in uncached_segments:
+        if seg.id in scores:
+            _score_cache[cache_keys[seg.id]] = scores[seg.id]
 
     return FrictionResponse(scores=scores).model_dump(by_alias=True)

@@ -48,11 +48,18 @@ def is_no_evidence_segment(description: str, osm_tags: dict) -> bool:
 
 
 def clamp_no_evidence_score(score: float, confidence: float) -> float | None:
-    """Return a clamped score if this looks like a no-evidence MEDIUM guess, else None.
+    """Return a clamped score if this looks like a no-evidence guess, else None.
 
     Caller should only invoke this after confirming is_no_evidence_segment().
+
+    Rules:
+    - MEDIUM guess (0.28-0.62) with confidence ≤ 0.70 → clamp to LOW
+    - HIGH score (>0.62) with confidence < 0.85 → also clamp (hallucinated severity)
+      A generic "Turn left onto X" instruction should never be HIGH friction without evidence.
     """
     if _CLAMP_SCORE_LO <= score <= _CLAMP_SCORE_HI and confidence <= _CLAMP_CONF_MAX:
+        return _CLAMP_TARGET
+    if score > _CLAMP_SCORE_HI and confidence < 0.85:
         return _CLAMP_TARGET
     return None
 
