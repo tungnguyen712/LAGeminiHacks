@@ -17,6 +17,8 @@ import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Route, RouteSegment } from '../types/Route';
 import { rerouteSegment } from '../services/api';
+import { LiveAssistant } from '../components/voice/LiveAssistant';
+import { ReportButton, ReportPanel } from '../components/ReportButton';
 
 export const ResultsScreen = () => {
   const { activeRoute, setActiveRoute, origin, destination, routes, isLoading, error, loadRoutes, transitMode, setTransitMode } = useRoute();
@@ -28,6 +30,7 @@ export const ResultsScreen = () => {
   const [clickedSegment, setClickedSegment] = useState<RouteSegment | null>(null);
   const [isRerouting, setIsRerouting] = useState(false);
   const [rerouteError, setRerouteError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Bottom sheet — Pointer Events drag (works for mouse + touch)
   const sheetAnim = useRef(new Animated.Value(SNAP_COLLAPSED)).current;
@@ -118,6 +121,7 @@ export const ResultsScreen = () => {
           <Text style={[styles.routeText, { color: th.text }]} numberOfLines={1}>{origin} to {destination}</Text>
           {selectedProfile && <ProfileBadge profile={selectedProfile} size="sm" />}
         </View>
+        <LiveAssistant />
         <View style={[styles.modeToggle, { backgroundColor: th.surface, borderColor: th.border }]}>
           {(['walk', 'all'] as const).map((m) => (
             <TouchableOpacity
@@ -193,9 +197,20 @@ export const ResultsScreen = () => {
           </View>
         )}
 
+        {/* Report panel — replaces routes list when open */}
+        {reportOpen && activeRoute && (
+          <ReportPanel
+            lat={activeRoute.segments[0]?.startLat ?? 0}
+            lng={activeRoute.segments[0]?.startLng ?? 0}
+            profile={selectedProfile?.id ?? ''}
+            th={th}
+            onClose={() => setReportOpen(false)}
+          />
+        )}
+
         {/* Routes list */}
         <ScrollView
-          style={styles.sheetScroll}
+          style={[styles.sheetScroll, reportOpen && { display: 'none' }]}
           contentContainerStyle={styles.sheetScrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -254,6 +269,9 @@ export const ResultsScreen = () => {
         {/* Footer buttons inside sheet */}
         {activeRoute && !isLoading && (
           <View style={[styles.sheetFooter, { borderTopColor: th.border }]}>
+            {!reportOpen && (
+              <ReportButton th={th} onPress={() => setReportOpen(true)} />
+            )}
             <Pressable
               style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
               onPress={() => navigate('/navigate')}

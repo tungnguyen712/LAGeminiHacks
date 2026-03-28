@@ -6,6 +6,7 @@ import { useLanguage, THEME_MODES } from '../store/LanguageContext';
 import { PlacesInput } from '../components/PlacesInput';
 import { ProfileBadge } from '../components/profile/ProfileBadge';
 import { VoiceSheet } from '../components/voice/VoiceSheet';
+import { LiveAssistant } from '../components/voice/LiveAssistant';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -53,6 +54,7 @@ export const SearchScreen = () => {
       <View style={[styles.header, { borderBottomColor: th.border }]}>
         <Text style={[styles.title, { color: th.text }]}>Plan Route</Text>
         {selectedProfile && <ProfileBadge profile={selectedProfile} size="md" />}
+        <LiveAssistant />
         <TouchableOpacity onPress={() => navigate('/settings')} style={[styles.iconButton, { backgroundColor: th.surface }]}>
           <Icons.Settings size={20} color={th.textSecondary} />
         </TouchableOpacity>

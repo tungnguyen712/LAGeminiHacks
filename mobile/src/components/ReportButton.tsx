@@ -1,18 +1,37 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { submitReport, REPORT_CATEGORIES, ReportCategory } from '../services/reports';
 import { THEME_MODES } from '../store/LanguageContext';
 import * as Icons from 'lucide-react';
 
+type Th = typeof THEME_MODES['day'];
+
+// Trigger button — lives in the footer
 interface ReportButtonProps {
+  th: Th;
+  onPress: () => void;
+}
+
+export const ReportButton = ({ th, onPress }: ReportButtonProps) => (
+  <TouchableOpacity
+    style={[styles.trigger, { backgroundColor: th.isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }]}
+    onPress={onPress}
+  >
+    <Icons.TriangleAlert size={16} color="#ef4444" />
+    <Text style={styles.triggerText}>Report Issue</Text>
+  </TouchableOpacity>
+);
+
+// Full panel — rendered inline replacing the routes list
+interface ReportPanelProps {
   lat: number;
   lng: number;
   profile: string;
-  th: typeof THEME_MODES['day'];
+  th: Th;
+  onClose: () => void;
 }
 
-export const ReportButton = ({ lat, lng, profile, th }: ReportButtonProps) => {
-  const [open, setOpen] = useState(false);
+export const ReportPanel = ({ lat, lng, profile, th, onClose }: ReportPanelProps) => {
   const [selected, setSelected] = useState<ReportCategory | null>(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -25,7 +44,7 @@ export const ReportButton = ({ lat, lng, profile, th }: ReportButtonProps) => {
       await submitReport(selected, note, lat, lng, profile);
       setSubmitted(true);
       setTimeout(() => {
-        setOpen(false);
+        onClose();
         setSubmitted(false);
         setSelected(null);
         setNote('');
@@ -37,23 +56,11 @@ export const ReportButton = ({ lat, lng, profile, th }: ReportButtonProps) => {
     }
   };
 
-  if (!open) {
-    return (
-      <TouchableOpacity
-        style={[styles.trigger, { backgroundColor: th.isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }]}
-        onPress={() => setOpen(true)}
-      >
-        <Icons.TriangleAlert size={16} color="#ef4444" />
-        <Text style={styles.triggerText}>Report Issue</Text>
-      </TouchableOpacity>
-    );
-  }
-
   return (
-    <View style={[styles.sheet, { backgroundColor: th.headerBg, borderColor: th.border }]}>
-      <View style={styles.sheetHeader}>
-        <Text style={[styles.sheetTitle, { color: th.text }]}>Report Accessibility Issue</Text>
-        <TouchableOpacity onPress={() => setOpen(false)}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.panel, { backgroundColor: th.headerBg }]} keyboardShouldPersistTaps="handled">
+      <View style={styles.panelHeader}>
+        <Text style={[styles.panelTitle, { color: th.text }]}>Report Accessibility Issue</Text>
+        <TouchableOpacity onPress={onClose}>
           <Icons.X size={20} color={th.textMuted} />
         </TouchableOpacity>
       </View>
@@ -95,7 +102,7 @@ export const ReportButton = ({ lat, lng, profile, th }: ReportButtonProps) => {
             value={note}
             onChangeText={setNote}
             multiline
-            numberOfLines={2}
+            numberOfLines={3}
           />
 
           <TouchableOpacity
@@ -110,7 +117,7 @@ export const ReportButton = ({ lat, lng, profile, th }: ReportButtonProps) => {
           </TouchableOpacity>
         </>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
@@ -121,26 +128,25 @@ const styles = StyleSheet.create({
     height: 52, cursor: 'pointer' as any,
   },
   triggerText: { fontSize: 13, fontWeight: '600', color: '#ef4444' },
-  sheet: {
-    borderRadius: 20, borderWidth: 1, padding: 16, gap: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12,
+  panel: {
+    padding: 20, gap: 16,
   },
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sheetTitle: { fontSize: 16, fontWeight: '700' },
+  panelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  panelTitle: { fontSize: 17, fontWeight: '700' },
   categories: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 7, borderRadius: 12, borderWidth: 1,
+    paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 1,
     cursor: 'pointer' as any,
   },
   catEmoji: { fontSize: 14 },
-  catLabel: { fontSize: 12, fontWeight: '600' },
+  catLabel: { fontSize: 13, fontWeight: '600' },
   noteInput: {
     borderWidth: 1, borderRadius: 12, padding: 12,
-    fontSize: 14, minHeight: 60,
+    fontSize: 14, minHeight: 80,
   },
   submitBtn: {
-    backgroundColor: '#ef4444', height: 48, borderRadius: 14,
+    backgroundColor: '#ef4444', height: 52, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer' as any,
   },

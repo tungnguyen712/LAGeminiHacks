@@ -40,7 +40,6 @@ Backend → Client (error):
     {"type": "error", "message": "..."}
 """
 import asyncio
-import base64
 import json
 import traceback
 
@@ -99,16 +98,25 @@ def _build_system_instruction(
             segs = r.get("segments", [])
             mode = r.get("mode", "walking")
 
-            # Count friction levels if scores are embedded
-            high = sum(1 for s in segs if s.get("friction", {}).get("level") == "HIGH")
-            med  = sum(1 for s in segs if s.get("friction", {}).get("level") == "MEDIUM")
-            low  = sum(1 for s in segs if s.get("friction", {}).get("level") == "LOW")
+            # friction may be a dict {"level":"HIGH",...} (backend format)
+            # or a plain string "high" (frontend RouteSegment format)
+            def _lvl(s: dict) -> str:
+                f = s.get("friction")
+                if isinstance(f, dict):
+                    return f.get("level", "").upper()
+                if isinstance(f, str):
+                    return f.upper()
+                return ""
 
-            # Collect HIGH-friction segment descriptions
+            high = sum(1 for s in segs if _lvl(s) == "HIGH")
+            med  = sum(1 for s in segs if _lvl(s) == "MEDIUM")
+            low  = sum(1 for s in segs if _lvl(s) == "LOW")
+
+            # Collect HIGH-friction segments with their IDs so rerouting can target them
             barriers = [
-                s["description"][:60]
+                f"{s.get('id','?')}: {s.get('description','')[:55]}"
                 for s in segs
-                if s.get("friction", {}).get("level") == "HIGH"
+                if _lvl(s) == "HIGH"
             ][:3]
 
             line = (
@@ -116,11 +124,14 @@ def _build_system_instruction(
                 f"{low} LOW / {med} MEDIUM / {high} HIGH friction segments"
             )
             if barriers:
-                line += f". Key barriers: {'; '.join(barriers)}"
+                line += f". HIGH barriers (id: description) — {'; '.join(barriers)}"
             lines.append(line)
 
         routes_section = (
-            "\n\nCurrent routes the user is comparing:\n" + "\n".join(lines)
+            "\n\nCurrent routes the user is comparing:\n" + "\n".join(lines) +
+            "\n\nSegment IDs follow the pattern r{routeIndex}s{segmentIndex} (e.g. r0s2)."
+            "\nIf the user asks to reroute or avoid a barrier, call reroute_around_segment"
+            " with the segment_id of the problematic segment."
         )
 
     return f"""You are PathSense, an intelligent accessibility navigation assistant built for Los Angeles.
@@ -167,11 +178,11 @@ def _client_msg_to_gemini(msg: dict) -> dict | None:
         }
 
     if t == "audioEnd":
-        # For native audio models (realtimeInput flow) the model uses VAD to detect
-        # end-of-speech automatically — no explicit signal needed.
-        # For text-turn models we could send clientContent.turnComplete, but omitting
-        # it is safe for both: the model will respond once it detects silence.
-        return None
+        return None  # VAD handles end-of-speech detection automatically
+
+    if t == "toolResponse":
+        # Frontend resolved a function call — forward the result to Gemini
+        return {"toolResponse": msg.get("data")}
 
     if t == "video":
         # Webcam frame — sent as realtimeInput alongside audio
@@ -272,6 +283,33 @@ async def live_proxy(ws: WebSocket) -> None:
     }
     if generation_config:
         setup_body["generationConfig"] = generation_config
+
+    # Expose reroute tool when route context is available
+    if routes:
+        setup_body["tools"] = [{
+            "functionDeclarations": [{
+                "name": "reroute_around_segment",
+                "description": (
+                    "Trigger a reroute to avoid a specific high-friction segment. "
+                    "Call this when the user explicitly asks to avoid a barrier, "
+                    "take a different path, or reroute around an obstacle."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "segment_id": {
+                            "type": "string",
+                            "description": "ID of the segment to reroute around (e.g. r0s2)",
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "Brief reason for the reroute request",
+                        },
+                    },
+                    "required": ["segment_id", "reason"],
+                },
+            }]
+        }]
 
     gemini_setup = {"setup": setup_body}
 
