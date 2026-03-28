@@ -4,9 +4,11 @@ import { fetchRoutes as apiFetchRoutes } from '../services/api';
 
 interface RouteContextType {
   origin: string;
-  setOrigin: (origin: string) => void;
+  setOrigin: (origin: string, label?: string) => void;
+  originLabel: string;
   destination: string;
-  setDestination: (destination: string) => void;
+  setDestination: (destination: string, label?: string) => void;
+  destinationLabel: string;
   activeRoute: Route | null;
   setActiveRoute: (route: Route | null) => void;
   routes: Route[];
@@ -20,8 +22,20 @@ interface RouteContextType {
 const RouteContext = createContext<RouteContextType | undefined>(undefined);
 
 export const RouteProvider = ({ children }: { children: ReactNode }) => {
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
+  const [origin, setOriginRaw] = useState('');
+  const [originLabel, setOriginLabel] = useState('');
+  const [destination, setDestinationRaw] = useState('');
+  const [destinationLabel, setDestinationLabel] = useState('');
+
+  const setOrigin = (value: string, label?: string) => {
+    setOriginRaw(value);
+    setOriginLabel(label ?? value);
+  };
+
+  const setDestination = (value: string, label?: string) => {
+    setDestinationRaw(value);
+    setDestinationLabel(label ?? value);
+  };
   const [activeRoute, setActiveRoute] = useState<Route | null>(null);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,8 +62,8 @@ export const RouteProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <RouteContext.Provider value={{
-      origin, setOrigin,
-      destination, setDestination,
+      origin, setOrigin, originLabel,
+      destination, setDestination, destinationLabel,
       activeRoute, setActiveRoute,
       routes, isLoading, error,
       transitMode, setTransitMode,

@@ -21,7 +21,7 @@ import { LiveAssistant } from '../components/voice/LiveAssistant';
 import { ReportButton, ReportPanel } from '../components/ReportButton';
 
 export const ResultsScreen = () => {
-  const { activeRoute, setActiveRoute, origin, destination, routes, isLoading, error, loadRoutes, transitMode, setTransitMode } = useRoute();
+  const { activeRoute, setActiveRoute, origin, originLabel, destination, destinationLabel, setDestination, routes, isLoading, error, loadRoutes, transitMode, setTransitMode } = useRoute();
   const { selectedProfile } = useProfile();
   const { themeMode } = useLanguage();
   const th = THEME_MODES[themeMode];
@@ -118,7 +118,7 @@ export const ResultsScreen = () => {
           <Icons.ArrowLeft size={24} color={th.text} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={[styles.routeText, { color: th.text }]} numberOfLines={1}>{origin} to {destination}</Text>
+          <Text style={[styles.routeText, { color: th.text }]} numberOfLines={1}>{originLabel || origin} → {destinationLabel || destination}</Text>
           {selectedProfile && <ProfileBadge profile={selectedProfile} size="sm" />}
         </View>
         <LiveAssistant />
@@ -150,6 +150,10 @@ export const ResultsScreen = () => {
           segments={activeRoute?.segments}
           onSegmentClick={setClickedSegment}
           fitPaddingBottom={SNAP_COLLAPSED + 20}
+          onMapClick={(coords, label) => {
+            setDestination(coords, label);
+            if (selectedProfile) loadRoutes(selectedProfile.id);
+          }}
         />
       </View>
 

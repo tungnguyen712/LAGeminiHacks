@@ -11,7 +11,7 @@ import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const SearchScreen = () => {
-  const { origin, setOrigin, destination, setDestination } = useRoute();
+  const { origin, setOrigin, originLabel, destination, setDestination, destinationLabel } = useRoute();
   const { selectedProfile } = useProfile();
   const { t, themeMode } = useLanguage();
   const th = THEME_MODES[themeMode];
@@ -25,8 +25,16 @@ export const SearchScreen = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        setOrigin(`${latitude},${longitude}`);
-        setIsLocating(false);
+        const coords = `${latitude},${longitude}`;
+        setOrigin(coords, 'Locating…');
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+          const label = (status === 'OK' && results?.[0])
+            ? results[0].formatted_address
+            : coords;
+          setOrigin(coords, label);
+          setIsLocating(false);
+        });
       },
       () => { setIsLocating(false); },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -58,8 +66,8 @@ export const SearchScreen = () => {
           <View style={styles.originRow}>
             <View style={{ flex: 1 }}>
               <PlacesInput
-                value={origin}
-                onPlaceSelect={setOrigin}
+                value={originLabel}
+                onPlaceSelect={(addr) => setOrigin(addr, addr)}
                 placeholder={t('currentLocation')}
                 icon="Circle"
                 onVoicePress={() => setIsVoiceVisible(true)}
@@ -74,8 +82,8 @@ export const SearchScreen = () => {
             </TouchableOpacity>
           </View>
           <PlacesInput
-            value={destination}
-            onPlaceSelect={setDestination}
+            value={destinationLabel}
+            onPlaceSelect={(addr) => setDestination(addr, addr)}
             placeholder={t('destination')}
             icon="MapPin"
             onVoicePress={() => setIsVoiceVisible(true)}

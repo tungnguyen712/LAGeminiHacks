@@ -28,6 +28,7 @@ interface RouteMapProps {
   isDark?: boolean;
   segments?: RouteSegment[];
   onSegmentClick?: (seg: RouteSegment) => void;
+  onMapClick?: (coords: string, label: string) => void;
   userPosition?: { lat: number; lng: number } | null;
   userHeading?: number | null;
   centerOnUser?: boolean;
@@ -42,6 +43,7 @@ export const RouteMap = ({
   isDark = true,
   segments,
   onSegmentClick,
+  onMapClick,
   userPosition,
   userHeading = null,
   centerOnUser = false,
@@ -79,6 +81,25 @@ export const RouteMap = ({
     });
     rendererRef.current.setMap(mapRef.current);
   }, [isDark]);
+
+  // Map click → reverse geocode → call onMapClick with coords + label
+  useEffect(() => {
+    if (!mapRef.current || !onMapClick) return;
+    const listener = mapRef.current.addListener('click', (e: google.maps.MapMouseEvent) => {
+      if (!e.latLng) return;
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      const coords = `${lat},${lng}`;
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        const label = (status === 'OK' && results?.[0])
+          ? results[0].formatted_address
+          : coords;
+        onMapClick(coords, label);
+      });
+    });
+    return () => window.google.maps.event.removeListener(listener);
+  }, [onMapClick]);
 
   // Fetch directions when origin/destination change
   useEffect(() => {
