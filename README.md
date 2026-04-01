@@ -1,8 +1,8 @@
-# PathSense
+# AccessiblePath
 
 **Accessibility-aware route comparator for Los Angeles**
 
-#PathSense compares walking routes and scores each one for accessibility friction based on your mobility profile (wheelchair, low-vision, or stroller). It uses Gemini to power friction scoring, a live camera+voice assistant, and spoken turn-by-turn navigation.
+# AccessiblePath compares walking routes and scores each one for accessibility friction based on your mobility profile (wheelchair, low-vision, or stroller). It uses Gemini to power friction scoring, a live camera+voice assistant, and spoken turn-by-turn navigation.
 
 ---
 
